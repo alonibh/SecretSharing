@@ -41,7 +41,6 @@ namespace SecretSharing
                         int index = random.Next(scales.Count);
                         _matrix[i, j] = scales[index];
                         entriesWithRating++;
-
                     }
                     else
                     {
@@ -117,17 +116,6 @@ namespace SecretSharing
             }
 
             return (traingingMatrix, testingMatrix);
-        }
-
-        /// <summary>
-        /// Split it in the vertical distribution scenario into K matrices of (almost equal) dimensions
-        /// N x M_k, where M_k is eithr the upper or the lower bound of M/K
-        /// </summary>
-        /// <param name="numOfVendors">K</param>
-        /// <returns></returns>
-        public List<Matrix> SplitToVendors(int numOfVendors)
-        {
-            return null;
         }
     }
 }
