@@ -34,7 +34,9 @@ namespace SecretSharing
             {
                 lastShare[i] = vector[i] - (sharesSum[i] % p);
                 if (lastShare[i] < 0)
+                {
                     lastShare[i] += p;
+                }
             }
             shares.Add(lastShare);
             return shares;
