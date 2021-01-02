@@ -1,10 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Numerics;
-using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 
 namespace SecretSharingProtocol
 {
@@ -25,7 +22,9 @@ namespace SecretSharingProtocol
             // Creating random koeff a[i]. That will be deleted after creating of shades
             // --------------------------------------
             for (int i = 0; i < k - 1; i++) // gets random a(n), n = 1 ... (k - 1)
+            {
                 Koeff[i] = MathMod(BigInteger.Abs(getRandom((i + 1) * 2)), p);
+            }
 
             // --------------------------------------
             // creating random X-part of shades ( N times, for N peoples)
@@ -33,12 +32,16 @@ namespace SecretSharingProtocol
             if (is_random_x)
             {
                 for (int i = 0; i < n; i++) // gets random x, x count = n
+                {
                     rand_x[i] = MathMod(rnd.Next(1, int.MaxValue - 1), p); // p - BigInt, rand_x[i] - int, can't be rnd.Next of 2 type of value :c
+                }
             }
             else
             {
                 for (int i = 0; i < n; i++) // such non-random!
+                {
                     rand_x[i] = MathMod((i + 1), p);
+                }
             }
 
             // --------------------------------------
@@ -60,7 +63,9 @@ namespace SecretSharingProtocol
                 result = MathMod(result, p);
 
                 if (!total_keys.ContainsKey(rand_x[i]))
+                {
                     total_keys.Add(rand_x[i], result);
+                }
 
                 result = 0; // set null for next calculates
             }
