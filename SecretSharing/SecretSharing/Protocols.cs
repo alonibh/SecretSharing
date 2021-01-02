@@ -1,19 +1,24 @@
-﻿using System;
+﻿using SecretSharingProtocol;
+using System;
 using System.Collections.Generic;
+using System.Numerics;
 
 namespace SecretSharing
 {
     public static class Protocols
     {
+        private static readonly BigInteger PRIME = BigInteger.Parse("1298074214633706835075030044377087");
+
         /// <summary>
         /// 
         /// </summary>
         /// <param name="vector"></param>
         /// <param name="numOfShares"></param>
-        /// <param name="p">The field size</param>
         /// <returns></returns>
-        public static List<double[]> AllOrNothingSecretSharing(this double[] vector, int numOfShares, int p)
+        public static List<double[]> AllOrNothingSecretSharing(this double[] vector, int numOfShares)
         {
+            int p = 17; // modulo base
+
             List<double[]> shares = new List<double[]>();
             double[] sharesSum = new double[vector.Length];
 
@@ -40,6 +45,108 @@ namespace SecretSharing
             }
             shares.Add(lastShare);
             return shares;
+        }
+
+
+        /// <summary>
+        /// Shamir's secret sharing using a third-party nuget
+        /// </summary>
+        /// <param name="vector"></param>
+        /// <param name="numOfSharesToMake"></param>
+        /// <param name="numOfSharesForRecovery"></param>
+        /// <returns>A PrimeAndShare for each of the mediators</returns>
+        public static List<Coordinate[]> ShamirSecretSharing(this double[] vector, int numOfMediators)
+        {
+            int numOfSharesForRecovery = (numOfMediators - 1) / 2;
+
+            var shares = new List<Coordinate[]>();
+            for (int i = 0; i < numOfMediators; i++)
+            {
+                shares.Add(new Coordinate[vector.Length]);
+            }
+
+            var shamirScheme = new ShamirSecretSharingScheme();
+
+            int shareCount = 0;
+            foreach (double entry in vector)
+            {
+                // Multiply by 2 because secret sharing doesnt work on fractions
+                List<Coordinate> entryShares = shamirScheme.Shamir(new BigInteger(entry * 2), PRIME, numOfMediators, numOfSharesForRecovery, false);
+
+
+                int indexCount = 0;
+                foreach (var share in entryShares)
+                {
+                    shares[indexCount][shareCount] = share;
+                    indexCount++;
+                }
+                shareCount++;
+            }
+
+            return shares;
+        }
+
+        public static double[] ReconstructShamirSecret(List<Coordinate[]> shares)
+        {
+            double[] secretVector = new double[shares[0].Length];
+            var shamirScheme = new ShamirSecretSharingScheme();
+
+            for (int shareCount = 0; shareCount < shares[0].Length; shareCount++)
+            {
+                List<Coordinate> coordinates = new List<Coordinate>();
+                for (int indexCount = 0; indexCount < shares.Count; indexCount++)
+                {
+                    coordinates.Add(shares[indexCount][shareCount]);
+                }
+                var secret = shamirScheme.deShamir(coordinates, PRIME);
+
+                secretVector[shareCount] = (double)secret / 2;
+            }
+
+            return secretVector;
+        }
+
+        /// <summary>
+        /// Protocol 2 - Computing the scalar product between two vectors that are shared between D mediators
+        /// </summary>
+        /// <param name="clShares"></param>
+        /// <param name="cmShares"></param>
+        /// <returns></returns>
+        public static double ScalarProductShares(List<Coordinate[]> clShares, List<Coordinate[]> cmShares)
+        {
+            List<Coordinate[]> multShares = new List<Coordinate[]>();
+
+            for (int indexCount = 0; indexCount < clShares.Count; indexCount++)
+            {
+                Coordinate[] multCoordinates = new Coordinate[clShares[0].Length];
+                for (int shareCount = 0; shareCount < clShares[0].Length; shareCount++)
+                {
+                    var newX = clShares[indexCount][shareCount].X;
+                    var newY = clShares[indexCount][shareCount].Y * cmShares[indexCount][shareCount].Y;
+                    multCoordinates[shareCount] = new Coordinate(newX, newY);
+                }
+                multShares.Add(multCoordinates);
+            }
+
+            List<Coordinate> coordinates = new List<Coordinate>();
+            for (int i = 0; i < clShares.Count; i++)
+            {
+                BigInteger sumX = 0;
+                BigInteger sumY = 0;
+                for (int j = 0; j < clShares[0].Length; j++)
+                {
+                    sumX += multShares[i][j].X;
+                    sumY += multShares[i][j].Y;
+                }
+                coordinates.Add(new Coordinate(sumX, sumY));
+            }
+
+            var shamirScheme = new ShamirSecretSharingScheme();
+
+            var secret = shamirScheme.deShamir(coordinates, PRIME);
+
+            //divide by 4 because we multiply each entry of the shares of cl and cm by 2
+            return (double)secret / 4;
         }
     }
 }
