@@ -48,6 +48,7 @@ namespace SecretSharing
         }
 
 
+
         /// <summary>
         /// Shamir's secret sharing using a third-party nuget
         /// </summary>
@@ -147,6 +148,56 @@ namespace SecretSharing
 
             //divide by 4 because we multiply each entry of the shares of cl and cm by 2
             return (double)secret / 4;
+        }
+
+        /// <summary>
+        /// Calculates the similarity matrix based on Protocol 1
+        /// </summary>
+        /// <param name="trainingUserItemMatrix">The user-item matrix</param>
+        /// <param name="numOfMediators">D</param>
+        /// <returns></returns>
+        public static double[,] CalcSimilarityMatrix(double[,] trainingUserItemMatrix, int numOfMediators)
+        {
+            int items = trainingUserItemMatrix.GetLength(1);
+            double[,] similarityMatrix = new double[items, items];
+
+            for (int i = 0; i < items; i++)
+            {
+                for (int j = i + 1; j < items; j++)
+                {
+                    double[] cl = trainingUserItemMatrix.GetVerticalVector(i);
+                    double[] cm = trainingUserItemMatrix.GetVerticalVector(j);
+
+                    var clShares = cl.ShamirSecretSharing(numOfMediators);
+                    var cmShares = cm.ShamirSecretSharing(numOfMediators);
+                    double z1 = ScalarProductShares(clShares, cmShares);
+
+
+                    double[] clPow = Array.ConvertAll(cl, x => x * x);
+                    double[] xiCm = Array.ConvertAll(cm, x => x == 0 ? (double)0 : 1);
+
+                    var clPowShares = clPow.ShamirSecretSharing(numOfMediators);
+                    var xiCmShares = xiCm.ShamirSecretSharing(numOfMediators);
+                    double z2 = ScalarProductShares(clPowShares, xiCmShares);
+
+
+                    double[] xiCl = Array.ConvertAll(cl, x => x == 0 ? (double)0 : 1);
+                    double[] cmPow = Array.ConvertAll(cm, x => x * x);
+
+                    var xiClShares = xiCl.ShamirSecretSharing(numOfMediators);
+                    var cmPowShares = cmPow.ShamirSecretSharing(numOfMediators);
+                    double z3 = ScalarProductShares(xiClShares, cmPowShares);
+
+                    double similarityScore = 0;
+                    if (z2 * z3 != 0)
+                    {
+                        similarityScore = z1 / (Math.Sqrt(z2 * z3));
+                    }
+                    similarityMatrix[i, j] = similarityScore;
+                    similarityMatrix[j, i] = similarityScore;
+                }
+            }
+            return similarityMatrix;
         }
     }
 }

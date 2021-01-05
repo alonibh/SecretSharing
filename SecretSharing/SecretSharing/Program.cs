@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace SecretSharing
+﻿namespace SecretSharing
 {
     class Program
     {
@@ -22,34 +20,8 @@ namespace SecretSharing
 
             #region Computing the similarity matrix
 
-            double[] cl = trainingUserItemMatrix.GetVerticalVector(0);
-            double[] cm = trainingUserItemMatrix.GetVerticalVector(1);
-
-            var clShares = cl.ShamirSecretSharing(D);
-            var cmShares = cm.ShamirSecretSharing(D);
-            double z1 = Protocols.ScalarProductShares(clShares, cmShares);
-
-
-            double[] clPow = Array.ConvertAll(cl, x => x * x);
-            double[] xiCm = Array.ConvertAll(cm, x =>  x==0 ? (double)0 : 1);
-
-            var clPowShares = clPow.ShamirSecretSharing(D);
-            var xiCmShares = xiCm.ShamirSecretSharing(D);
-            double z2 = Protocols.ScalarProductShares(clPowShares, xiCmShares);
-
-
-            double[] xiCl = Array.ConvertAll(cl, x => x == 0 ? (double)0 : 1);
-            double[] cmPow = Array.ConvertAll(cm, x => x * x);
-
-            var xiClShares = xiCl.ShamirSecretSharing(D);
-            var cmPowShares = cmPow.ShamirSecretSharing(D);
-            double z3 = Protocols.ScalarProductShares(xiClShares, cmPowShares);
-
-            double similarity = 0;
-            if(z2*z3 != 0)
-            {
-                similarity = z1 / (Math.Sqrt(z2 * z3));
-            }
+            double[,] similarityMatrix = Protocols.CalcSimilarityMatrix(trainingUserItemMatrix, D);
+            
 
             #endregion
 
