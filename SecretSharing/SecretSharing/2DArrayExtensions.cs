@@ -1,15 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Numerics;
 
 namespace SecretSharing
 {
     public static class _2DArrayExtensions
     {
-        public static double[,] CreateRandomUserItemMatrix(int N, int M, int numR, double scaleStart, double scaleEnd, double scaleInterval)
+        public static int[,] CreateRandomUserItemMatrix(int N, int M, int numR, int scaleStart, int scaleEnd, int scaleInterval)
         {
-            var userItemMatrix = new double[N, M];
-            List<double> scales = new List<double>();
-            for (double i = scaleStart; i <= scaleEnd; i += scaleInterval)
+            var userItemMatrix = new int[N, M];
+            List<int> scales = new List<int>();
+            for (int i = scaleStart; i <= scaleEnd; i += scaleInterval)
             {
                 scales.Add(i);
             }
@@ -51,12 +52,12 @@ namespace SecretSharing
             return userItemMatrix;
         }
 
-        public static (double[,], double[,]) SplitToTrainingAndTesting(this double[,] userItemMatrix) // 70/30 hard-coded
+        public static (int[,], int[,]) SplitToTrainingAndTesting(this int[,] userItemMatrix) // 70/30 hard-coded
         {
             int numR = 0;
             int n = userItemMatrix.GetLength(0);
             int m = userItemMatrix.GetLength(1);
-            foreach (double entry in userItemMatrix)
+            foreach (int entry in userItemMatrix)
             {
                 if (entry != 0)
                 {
@@ -66,8 +67,8 @@ namespace SecretSharing
             int trainingEntriesLeft = (int)(numR * 0.7);
             int testingEntriesLeft = numR - trainingEntriesLeft;
 
-            var traingingMatrix = new double[n, m];
-            var testingMatrix = new double[n, m];
+            var traingingMatrix = new int[n, m];
+            var testingMatrix = new int[n, m];
 
             var random = new Random();
             for (int i = 0; i < n; i++)
@@ -115,25 +116,25 @@ namespace SecretSharing
         /// </summary>
         /// <param name="numOfVendors">K</param>
         /// <returns></returns>
-        public static List<double[,]> SplitToVendors(this double[,] userItemMatrix, int numOfVendors)
+        public static List<int[,]> SplitToVendors(this int[,] userItemMatrix, int numOfVendors)
         {
             int N = userItemMatrix.GetLength(0);
             int M = userItemMatrix.GetLength(1);
             int size = M / numOfVendors;
             int lastSize = (M % numOfVendors) + size;
-            List<double[,]> splittedUserItemMatrix = new List<double[,]>();
+            List<int[,]> splittedUserItemMatrix = new List<int[,]>();
             for (int i = 0; i < numOfVendors; i++)
             {
-                double[,] vendorUserItemMatrix;
+                int[,] vendorUserItemMatrix;
                 if (i == numOfVendors - 1)
                 {
-                    vendorUserItemMatrix = new double[N, lastSize];
+                    vendorUserItemMatrix = new int[N, lastSize];
                     Array.Copy(userItemMatrix, N * i * size, vendorUserItemMatrix, 0, N * lastSize);
                     splittedUserItemMatrix.Add(vendorUserItemMatrix);
                 }
                 else
                 {
-                    vendorUserItemMatrix = new double[N, size];
+                    vendorUserItemMatrix = new int[N, size];
                     Array.Copy(userItemMatrix, N * i * size, vendorUserItemMatrix, 0, N * size);
                     splittedUserItemMatrix.Add(vendorUserItemMatrix);
                 }
@@ -148,10 +149,10 @@ namespace SecretSharing
         /// <param name="matrix"></param>
         /// <param name="index"></param>
         /// <returns></returns>
-        public static double[] GetVerticalVector(this double[,] matrix, int index)
+        public static int[] GetVerticalVector(this int[,] matrix, int index)
         {
             int length = matrix.GetLength(0);
-            double[] vector = new double[length];
+            int[] vector = new int[length];
             for (int i = 0; i < length; i++)
             {
                 vector[i] = matrix[i, index];
@@ -159,5 +160,114 @@ namespace SecretSharing
             return vector;
         }
 
+        public static BigInteger[] GetVerticalVector(this BigInteger[,] matrix, int index)
+        {
+            int length = matrix.GetLength(0);
+            BigInteger[] vector = new BigInteger[length];
+            for (int i = 0; i < length; i++)
+            {
+                vector[i] = matrix[i, index];
+            }
+            return vector;
+        }
+
+        /// <summary>
+        /// In order to retrive r_n from the user-item matrix 
+        /// </summary>
+        /// <param name="matrix"></param>
+        /// <param name="index"></param>
+        /// <returns></returns>
+        public static double[] GetHorizontalVector(this double[,] matrix, int index)
+        {
+            int length = matrix.GetLength(1);
+            double[] vector = new double[length];
+            for (int i = 0; i < length; i++)
+            {
+                vector[i] = matrix[index, i];
+            }
+            return vector;
+        }
+
+        public static double[] GetAverageRatings(this int[,] userItemMatrix)
+        {
+            int users = userItemMatrix.GetLength(0);
+            int items = userItemMatrix.GetLength(1);
+            double[] averageRatings = new double[items];
+
+            for (int i = 0; i < items; i++)
+            {
+                double ratingSum = 0;
+                double nonZeroRatings = 0;
+                for (int j = 0; j < users; j++)
+                {
+                    ratingSum += userItemMatrix[j, i];
+                    if (userItemMatrix[j, i] != 0)
+                        nonZeroRatings++;
+                }
+                averageRatings[i] = ratingSum / nonZeroRatings;
+            }
+            return averageRatings;
+        }
+
+        public static BigInteger[,] GetAdjustedUserItemMatrix(this int[,] userItemMatrix, double Q)
+        {
+            int users = userItemMatrix.GetLength(0);
+            int items = userItemMatrix.GetLength(1);
+            BigInteger[,] adjustedUserItemMatrix = new BigInteger[users, items];
+
+            double[] averageRatings = userItemMatrix.GetAverageRatings();
+            for (int i = 0; i < users; i++)
+            {
+                for (int j = 0; j < items; j++)
+                {
+                    if (userItemMatrix[i, j] == 0)
+                    {
+                        adjustedUserItemMatrix[i, j] = 0;
+                    }
+                    else
+                    {
+                        var adjustedRating = userItemMatrix[i, j] - averageRatings[j];
+                        adjustedUserItemMatrix[i, j] = (BigInteger)Math.Floor((adjustedRating * Q) + 0.5);
+                    }
+                }
+            }
+
+            return adjustedUserItemMatrix;
+        }
+
+        public static BigInteger[] GetHorizontalVector(this List<BigInteger[]> matrix, int n)
+        {
+            int length = matrix.Count;
+            BigInteger[] vector = new BigInteger[length];
+            for (int i = 0; i < length; i++)
+            {
+                vector[i] = matrix[i][n];
+            }
+            return vector;
+        }
+
+        public static int[,] GetXi(this int[,] matrix)
+        {
+            int users = matrix.GetLength(0);
+            int items = matrix.GetLength(1);
+            int[,] xiMatrix = new int[users, items];
+
+            for (int i = 0; i < users; i++)
+            {
+                for (int j = 0; j < items; j++)
+                {
+                    if (matrix[i, j] == 0)
+                    {
+                        xiMatrix[i, j] = 0;
+                    }
+                    else
+                    {
+                        xiMatrix[i, j] = 1;
+                    }
+                }
+            }
+
+            return xiMatrix;
+        }
     }
 }
