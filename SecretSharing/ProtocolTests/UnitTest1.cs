@@ -166,6 +166,41 @@ namespace ProtocolTests
         }
 
         [Fact]
+        public void TestVectorObfuscationSum()
+        {
+            // ARRANGE
+            int[,] userItemMatrix = new int[2, 3] { { 2, 5, 3 }, { 3, 4, 5 } };
+            int D = 5;
+            int n = 0;
+
+            BigInteger[,] similarityMatrix = Protocols.CalcSimilarityMatrix(userItemMatrix, D);
+
+            var XiRShares = Protocols.SecretShareXiR(userItemMatrix, D);
+
+            BigInteger sum1 = 0;
+            for (int i = 0; i < 5; i++)
+            {
+                sum1 += XiRShares[i][0][0];
+            }
+            sum1 %= Protocols.PRIME;
+
+            // ACT
+
+            List<BigInteger[]>[] ObfuscatedXiRShares = Protocols.ObfuscateShares(XiRShares);
+
+
+            BigInteger sum2 = 0;
+            for (int i = 0; i < 5; i++)
+            {
+                sum2 += ObfuscatedXiRShares[i][0][0];
+            }
+            sum2 %= Protocols.PRIME;
+
+            // ASSERT
+            Assert.Equal(sum1, sum2);
+        }
+
+        [Fact]
         public void TestShamirAddBy2()
         {
             // ARRANGE
@@ -186,33 +221,6 @@ namespace ProtocolTests
         }
 
         [Fact]
-        public void TestVectorObfuscation()
-        {
-            // ARRANGE
-            BigInteger[] secretVector = new BigInteger[3] { 0, 1, 2 };
-
-            // ACT
-            var shares = Protocols.AllOrNothingSecretSharing(secretVector, 5);
-            var obfuscatedShares = Protocols.ObfuscateShares(shares);
-            var returnedSecretVector = Protocols.ReconstructAllOrNothingSecret(obfuscatedShares);
-
-            BigInteger sum1 = 0;
-            for (int i = 0; i < 5; i++)
-            {
-                sum1 += shares[i][0];
-            }
-
-            BigInteger sum2 = 0;
-            for (int i = 0; i < 5; i++)
-            {
-                sum2 += obfuscatedShares[i][0];
-            }
-
-            // ASSERT
-            Assert.Equal(secretVector, returnedSecretVector);
-        }
-
-        [Fact]
         public void TestGetMostSimilarItemsToM()
         {
             // ARRANGE
@@ -229,10 +237,12 @@ namespace ProtocolTests
         public void TestRatingPrediction()
         {
             // ARRANGE
-            int[,] userItemMatrix = new int[3, 3] { { 1,2,2 }, { 2,0,4 }, { 5,3,3 } };
-            int n = 1;
-            int m = 1;
+            int[,] userItemMatrix = new int[4, 4] { { 1, 2, 0, 3 }, { 3, 4, 1, 5 }, { 2, 3, 3, 4 }, { 1, 2, 3, 2 } };
+            int n = 0;
+            int m = 2;
             int D = 5;
+            int q = 2;
+
             BigInteger x_dSum = 0;
             BigInteger y_dSum = 0;
 
@@ -242,17 +252,19 @@ namespace ProtocolTests
             var RHatShares = Protocols.SecretShareRHat(userItemMatrix, D);
             var XiRShares = Protocols.SecretShareXiR(userItemMatrix, D);
 
+            List<BigInteger[]>[] ObfuscatedXiRShares = Protocols.ObfuscateShares(XiRShares);
 
-            var sm = Protocols.GetMostSimilarItemsToM(similarityMatrix, 1, 1);
+
+            var sm = Protocols.GetMostSimilarItemsToM(similarityMatrix, m, q);
             foreach (var RHatShare in RHatShares)
             {
                 BigInteger[] RHat_n = RHatShare.GetHorizontalVector(n);
                 BigInteger x_d = Protocols.ScalarProductVectors(RHat_n, sm);
                 x_dSum += x_d;
             }
-            foreach (var ObfuscatedXiRShare in XiRShares)
+            foreach (var obfuscatedXiRShare in ObfuscatedXiRShares)
             {
-                BigInteger[] XiR_n = ObfuscatedXiRShare.GetHorizontalVector(n);
+                BigInteger[] XiR_n = obfuscatedXiRShare.GetHorizontalVector(n);
                 BigInteger y_d = Protocols.ScalarProductVectors(XiR_n, sm);
                 y_dSum += y_d;
             }
@@ -262,13 +274,21 @@ namespace ProtocolTests
 
             var averageRating = userItemMatrix.GetAverageRatings()[m];
             double predictedRating = averageRating;
+            double change = 0;
             if (y_dSum != 0)
             {
-                predictedRating += (double)(x_dSum / y_dSum) / Protocols.Q;
+                change = (double)(x_dSum / y_dSum) / Protocols.Q;
+                // if thats true then x_sum is negative
+                if (change > 5)
+                {
+                    x_dSum = Protocols.PRIME - x_dSum;
+                    change = (double)(x_dSum / y_dSum) / Protocols.Q * -1;
+                }
+                predictedRating += change;
             }
 
             // ASSERT
-            Assert.Equal(3.5, predictedRating);
+            Assert.Equal(1.707, Math.Round(predictedRating, 3));
         }
     }
 }

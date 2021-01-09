@@ -311,39 +311,36 @@ namespace SecretSharing
         /// </summary>
         /// <param name="xiRShares"></param>
         /// <returns></returns>
-        public static List<BigInteger[]> ObfuscateShares(List<BigInteger[]> shares)
+        public static List<BigInteger[]>[] ObfuscateShares(List<BigInteger[]>[] shares)
         {
-            int numOfShares = shares.Count;
-            int items = shares[0].Length;
+            int numOfShares = shares.Length;
+            int users = shares[0][0].Length;
+            List<BigInteger[]>[] obfescatedShares = new List<BigInteger[]>[numOfShares];
 
-            List<BigInteger[]>[] splittedShares = new List<BigInteger[]>[numOfShares];
-            int shareCount = 0;
-            foreach (var share in shares)
+            for (int i = 0; i < shares[0].Count; i++)
             {
-                var AONShares = AllOrNothingSecretSharing(share, numOfShares);
-                splittedShares[shareCount] = AONShares;
-                shareCount++;
-            }
-
-            List<BigInteger[]> obfuscatedShares = new List<BigInteger[]>();
-            for (int i = 0; i < numOfShares; i++)
-            {
-                BigInteger[] sum = new BigInteger[items];
-                for (int j = 0; j < numOfShares; j++)
+                BigInteger[] vector = new BigInteger[users];
+                for (int j = 0; j < users; j++)
                 {
-                    var share = splittedShares[j][i];
-                    int shareIndex = 0;
-                    foreach (var entry in share)
+                    BigInteger sum = 0;
+                    for (int k = 0; k < numOfShares; k++)
                     {
-                        sum[shareIndex] += entry;
-                        sum[shareIndex] = sum[shareIndex] % PRIME;
-                        shareIndex++;
+                        sum += shares[k][i][j];
                     }
+                    vector[j] = sum;
                 }
-                obfuscatedShares.Add(sum);
-            }
+                var AONshares = AllOrNothingSecretSharing(vector, numOfShares);
+                int shareCount = 0;
+                foreach (var AONshare in AONshares)
+                {
+                    if (obfescatedShares[shareCount] == null)
+                        obfescatedShares[shareCount] = new List<BigInteger[]>();
 
-            return obfuscatedShares;
+                    obfescatedShares[shareCount].Add(AONshare);
+                    shareCount++;
+                }
+            }
+            return obfescatedShares;
         }
 
         /// <summary>
@@ -394,7 +391,7 @@ namespace SecretSharing
     {
         public int Compare(Tuple<BigInteger, int> x, Tuple<BigInteger, int> y)
         {
-            return x.Item1.CompareTo(y.Item1)*-1;
+            return x.Item1.CompareTo(y.Item1) * -1;
         }
     }
 

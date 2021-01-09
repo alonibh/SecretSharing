@@ -1,5 +1,6 @@
 ﻿using SecretSharingProtocol;
 using System.Collections.Generic;
+using System.Linq;
 using System.Numerics;
 
 namespace SecretSharing
@@ -37,45 +38,56 @@ namespace SecretSharing
 
             #region Obfuscate the shares of xiR (Protocol 4)
 
-            List<BigInteger[]>[] ObfuscatedXiRShares = new List<BigInteger[]>[D];
-            for (int i = 0; i < D; i++)
-            {
-                ObfuscatedXiRShares[i] = Protocols.ObfuscateShares(XiRShares[i]);
-            }
+            List<BigInteger[]>[] ObfuscatedXiRShares = Protocols.ObfuscateShares(XiRShares);
 
             #endregion
 
 
             #region Predict rating (Protocol 5)
-            int n = 5;
-            int m = 10;
-            BigInteger x_dSum = 0;
-            BigInteger y_dSum = 0;
-
-            var sm = Protocols.GetMostSimilarItemsToM(similarityMatrix, 2, 5);
-            foreach (var RHatShare in RHatShares)
+            int[] ns = Enumerable.Range(0, 5).ToArray();
+            int[] ms = Enumerable.Range(0, 5).ToArray();
+            foreach (int n in ns)
             {
-                BigInteger[] RHat_n = RHatShare.GetHorizontalVector(n);
-                BigInteger x_d = Protocols.ScalarProductVectors(RHat_n, sm);
-                x_dSum += x_d;
-            }
-            foreach (var ObfuscatedXiRShare in ObfuscatedXiRShares)
-            {
-                BigInteger[] XiR_n = ObfuscatedXiRShare.GetHorizontalVector(n);
-                BigInteger y_d = Protocols.ScalarProductVectors(XiR_n, sm);
-                y_dSum += y_d;
-            }
+                foreach (var m in ms)
+                {
+                    int q = 10;
+                    BigInteger x_dSum = 0;
+                    BigInteger y_dSum = 0;
 
-            x_dSum %= Protocols.PRIME;
-            y_dSum %= Protocols.PRIME;
+                    var sm = Protocols.GetMostSimilarItemsToM(similarityMatrix, m, q);
+                    foreach (var RHatShare in RHatShares)
+                    {
+                        BigInteger[] RHat_n = RHatShare.GetHorizontalVector(n);
+                        BigInteger x_d = Protocols.ScalarProductVectors(RHat_n, sm);
+                        x_dSum += x_d;
+                    }
+                    foreach (var ObfuscatedXiRShare in ObfuscatedXiRShares)
+                    {
+                        BigInteger[] XiR_n = ObfuscatedXiRShare.GetHorizontalVector(n);
+                        BigInteger y_d = Protocols.ScalarProductVectors(XiR_n, sm);
+                        y_dSum += y_d;
+                    }
 
-            var averageRating = trainingUserItemMatrix.GetAverageRatings()[m];
-            double predictedRating = averageRating;
-            if (y_dSum != 0)
-            {
-                predictedRating += (double)(x_dSum / y_dSum) / Protocols.Q;
+                    x_dSum %= Protocols.PRIME;
+                    y_dSum %= Protocols.PRIME;
+
+                    var averageRating = trainingUserItemMatrix.GetAverageRatings()[m];
+                    double predictedRating = averageRating;
+                    double change = 0;
+                    if (y_dSum != 0)
+                    {
+                        change = (double)(x_dSum / y_dSum) / Protocols.Q;
+                        // if thats true that x_sum is negative
+                        if (change > 5)
+                        {
+                            x_dSum = Protocols.PRIME - x_dSum;
+                            change = (double)(x_dSum / y_dSum) / Protocols.Q * -1;
+                        }
+                        predictedRating += change;
+                    }
+                    System.Console.WriteLine(change);
+                }
             }
-
             #endregion
         }
     }
