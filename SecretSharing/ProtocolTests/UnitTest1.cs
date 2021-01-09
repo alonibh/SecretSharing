@@ -2,7 +2,6 @@ using SecretSharing;
 using SecretSharingProtocol;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Numerics;
 using Xunit;
 
@@ -171,7 +170,6 @@ namespace ProtocolTests
             // ARRANGE
             int[,] userItemMatrix = new int[2, 3] { { 2, 5, 3 }, { 3, 4, 5 } };
             int D = 5;
-            int n = 0;
 
             BigInteger[,] similarityMatrix = Protocols.CalcSimilarityMatrix(userItemMatrix, D);
 

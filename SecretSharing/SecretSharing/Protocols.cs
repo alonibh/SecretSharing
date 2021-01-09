@@ -1,6 +1,5 @@
 ﻿using SecretSharingProtocol;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
@@ -242,7 +241,10 @@ namespace SecretSharing
                 foreach (var share in shares)
                 {
                     if (RHatShares[shareCount] == null)
+                    {
                         RHatShares[shareCount] = new List<BigInteger[]>();
+                    }
+
                     RHatShares[shareCount].Add(share);
                     shareCount++;
                 }
@@ -298,7 +300,10 @@ namespace SecretSharing
                 foreach (var share in shares)
                 {
                     if (xiRShares[shareCount] == null)
+                    {
                         xiRShares[shareCount] = new List<BigInteger[]>();
+                    }
+
                     xiRShares[shareCount].Add(share);
                     shareCount++;
                 }
@@ -334,7 +339,9 @@ namespace SecretSharing
                 foreach (var AONshare in AONshares)
                 {
                     if (obfescatedShares[shareCount] == null)
+                    {
                         obfescatedShares[shareCount] = new List<BigInteger[]>();
+                    }
 
                     obfescatedShares[shareCount].Add(AONshare);
                     shareCount++;

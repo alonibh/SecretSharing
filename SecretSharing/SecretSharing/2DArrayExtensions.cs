@@ -202,7 +202,9 @@ namespace SecretSharing
                 {
                     ratingSum += userItemMatrix[j, i];
                     if (userItemMatrix[j, i] != 0)
+                    {
                         nonZeroRatings++;
+                    }
                 }
                 averageRatings[i] = ratingSum / nonZeroRatings;
             }
