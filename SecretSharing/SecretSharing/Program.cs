@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 
@@ -11,7 +12,8 @@ namespace SecretSharing
             int N = 10; //users
             int M = 50; //items
             int D = 5; //mediators
-            // int k = 7; //vendors
+            int k = 7; //vendors
+            int q = 10; // num of similar items
 
             int[,] userItemMatrix = _2DArrayExtensions.CreateRandomUserItemMatrix(N, M, 500, 1, 5, 1);
 
@@ -49,11 +51,10 @@ namespace SecretSharing
             {
                 foreach (var m in ms)
                 {
-                    int q = 10;
                     BigInteger x_dSum = 0;
                     BigInteger y_dSum = 0;
 
-                    var sm = Protocols.GetMostSimilarItemsToM(similarityMatrix, m, q);
+                    var sm = Protocols.GetMostSimilarItemsToM(similarityMatrix, m, q, true);
                     foreach (var RHatShare in RHatShares)
                     {
                         BigInteger[] RHat_n = RHatShare.GetHorizontalVector(n);
@@ -84,9 +85,61 @@ namespace SecretSharing
                         }
                         predictedRating += change;
                     }
-                    System.Console.WriteLine(change);
+                    //System.Console.WriteLine(change);
                 }
             }
+            #endregion
+
+            #region Predict ranking(Protocol 6)
+
+            int h = 6;
+            int selectedVendor = 6; // from 0 to k-1
+            int itemsPerVendor = M / k;
+            int start = selectedVendor * itemsPerVendor;
+            int count;
+            if (selectedVendor == k - 1)
+                count = M - ((k - 1) * itemsPerVendor);
+            else
+                count = itemsPerVendor;
+            int[] vendorItems = Enumerable.Range(start, count).ToArray();
+
+            int selectedUser = 7;
+
+            BigInteger[] x = new BigInteger[count];
+            BigInteger[] y = new BigInteger[count];
+            int i = 0;
+            foreach (var itemIndex in vendorItems)
+            {
+                var sm = Protocols.GetMostSimilarItemsToM(similarityMatrix, itemIndex, q, false);
+
+                foreach (var RHatShare in RHatShares)
+                {
+                    BigInteger[] RHat_n = RHatShare.GetHorizontalVector(selectedUser);
+                    BigInteger x_d = Protocols.ScalarProductVectors(RHat_n, sm);
+                    x[i] += x_d;
+
+                    y[i] += RHat_n[itemIndex];
+
+                }
+                x[i] %= Protocols.PRIME;
+                y[i] %= Protocols.PRIME;
+                i++;
+            }
+            List<int> indices = new List<int>();
+            for (i = 0; i < count; i++)
+            {
+                if (y[i] == 0)
+                    indices.Add(i);
+            }
+            List<Tuple<BigInteger, int>> valueAndIndex = new List<Tuple<BigInteger, int>>();
+            foreach (var index in indices)
+            {
+                valueAndIndex.Add(new Tuple<BigInteger, int>(x[index], index));
+            }
+            Array.Sort(valueAndIndex.ToArray(), new ScoreAndIndexComparer());
+            valueAndIndex = valueAndIndex.Take(h).ToList();
+            int[] mostRecommendedItems = valueAndIndex.Select(o => o.Item2 + start).ToArray();
+
             #endregion
         }
     }

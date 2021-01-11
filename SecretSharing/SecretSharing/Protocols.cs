@@ -357,7 +357,7 @@ namespace SecretSharing
         /// <param name="m"></param>
         /// <param name="q"></param>
         /// <returns></returns>
-        public static BigInteger[] GetMostSimilarItemsToM(BigInteger[,] similarityMatrix, int m, int q)
+        public static BigInteger[] GetMostSimilarItemsToM(BigInteger[,] similarityMatrix, int m, int q, bool isPositivesOnly)
         {
             int vectorLength = similarityMatrix.GetLength(0);
             Tuple<BigInteger, int>[] similarityScoreAndIndex = new Tuple<BigInteger, int>[vectorLength];
@@ -371,7 +371,17 @@ namespace SecretSharing
 
             foreach (var item in similarityScoreAndIndex)
             {
-                sm[item.Item2] = item.Item1;
+                if (isPositivesOnly)
+                {
+                    if (item.Item1 > 0)
+                    {
+                        sm[item.Item2] = item.Item1;
+                    }
+                }
+                else
+                {
+                    sm[item.Item2] = item.Item1;
+                }
             }
 
             return sm;
