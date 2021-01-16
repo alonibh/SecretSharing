@@ -1,6 +1,9 @@
-﻿using SecretSharingProtocol;
+﻿using LumenWorks.Framework.IO.Csv;
+using SecretSharingProtocol;
 using System;
 using System.Collections.Generic;
+using System.Data;
+using System.IO;
 using System.Linq;
 using System.Numerics;
 
@@ -10,6 +13,55 @@ namespace SecretSharing
     {
         public static readonly BigInteger PRIME = BigInteger.Parse("1298074214633706835075030044377087");
         public static readonly double Q = 1296859633245;
+
+        public static int[,] ReadUserItemMatrix(string path)
+        {
+            List<UserRating> ratings = new List<UserRating>();
+
+            if (path.EndsWith("csv"))
+            {
+
+                var csvTable = new DataTable();
+                using (var csvReader = new CsvReader(new StreamReader(File.OpenRead(path)), true))
+                {
+                    csvTable.Load(csvReader);
+                }
+                for (int i = 0; i < csvTable.Rows.Count; i++)
+                {
+                    ratings.Add(new UserRating
+                    {
+                        UserId = int.Parse(csvTable.Rows[i][0].ToString()),
+                        ItemId = int.Parse(csvTable.Rows[i][1].ToString()),
+                        Rating = int.Parse(csvTable.Rows[i][2].ToString())
+                    });
+                }
+            }
+            else if (path.EndsWith("dat"))
+            {
+                string[] lines = File.ReadAllLines(path);
+                foreach (var line in lines)
+                {
+                    string[] splitted = line.Split();
+                    ratings.Add(new UserRating
+                    {
+                        UserId = int.Parse(splitted[0]),
+                        ItemId = int.Parse(splitted[1]),
+                        Rating = int.Parse(splitted[2])
+                    });
+                }
+            }
+
+            int N = ratings.Max(o => o.UserId);
+            int M = ratings.Max(o => o.ItemId);
+
+            var userItemMatrix = new int[N, M];
+            foreach (var rating in ratings)
+            {
+                userItemMatrix[rating.UserId - 1, rating.ItemId - 1] = rating.Rating;
+            }
+
+            return userItemMatrix;
+        }
 
 
         public static List<BigInteger[]> AllOrNothingSecretSharing(BigInteger[] vector, int numOfShares)
@@ -65,6 +117,17 @@ namespace SecretSharing
                 sum += vector1[i] * vector2[i];
             }
             return sum % PRIME;
+        }
+
+        public static double ScalarProductVectors(double[] vector1, double[] vector2)
+        {
+            int length = vector1.Length;
+            double sum = 0;
+            for (int i = 0; i < length; i++)
+            {
+                sum += vector1[i] * vector2[i];
+            }
+            return sum;
         }
 
         /// <summary>
@@ -183,28 +246,27 @@ namespace SecretSharing
 
             for (int i = 0; i < items; i++)
             {
+                BigInteger[] cl = userItemMatrix.GetVerticalVector(i).Select(o => (BigInteger)o).ToArray();
+                var clShares = ShamirSecretSharing(cl, numOfShares);
+                BigInteger[] clPow = Array.ConvertAll(cl, x => x * x);
+                var clPowShares = ShamirSecretSharing(clPow, numOfShares);
+                BigInteger[] xiCl = Array.ConvertAll(cl, x => x == 0 ? (BigInteger)0 : 1);
+                var xiClShares = ShamirSecretSharing(xiCl, numOfShares);
+
                 for (int j = i + 1; j < items; j++)
                 {
-                    BigInteger[] cl = userItemMatrix.GetVerticalVector(i).Select(o => (BigInteger)o).ToArray();
                     BigInteger[] cm = userItemMatrix.GetVerticalVector(j).Select(o => (BigInteger)o).ToArray();
 
-                    var clShares = ShamirSecretSharing(cl, numOfShares);
                     var cmShares = ShamirSecretSharing(cm, numOfShares);
                     double z1 = ScalarProductShares(clShares, cmShares);
 
-
-                    BigInteger[] clPow = Array.ConvertAll(cl, x => x * x);
                     BigInteger[] xiCm = Array.ConvertAll(cm, x => x == 0 ? (BigInteger)0 : 1);
 
-                    var clPowShares = ShamirSecretSharing(clPow, numOfShares);
                     var xiCmShares = ShamirSecretSharing(xiCm, numOfShares);
                     double z2 = ScalarProductShares(clPowShares, xiCmShares);
 
-
-                    BigInteger[] xiCl = Array.ConvertAll(cl, x => x == 0 ? (BigInteger)0 : 1);
                     BigInteger[] cmPow = Array.ConvertAll(cm, x => x * x);
 
-                    var xiClShares = ShamirSecretSharing(xiCl, numOfShares);
                     var cmPowShares = ShamirSecretSharing(cmPow, numOfShares);
                     double z3 = ScalarProductShares(xiClShares, cmPowShares);
 
@@ -217,7 +279,50 @@ namespace SecretSharing
                     //Convert to integer value
                     similarityMatrix[i, j] = (BigInteger)Math.Floor((similarityScore * Q) + 0.5);
                     similarityMatrix[j, i] = (BigInteger)Math.Floor((similarityScore * Q) + 0.5);
+                    Console.WriteLine(j + "/" + items);
+
                 }
+                Console.WriteLine("*** " + i + "/" + items + " ***");
+            }
+            return similarityMatrix;
+        }
+
+        public static double[,] CalcSimilarityMatrixNoCrypto(int[,] userItemMatrix)
+        {
+            int items = userItemMatrix.GetLength(1);
+            double[,] similarityMatrix = new double[items, items];
+
+            for (int i = 0; i < items; i++)
+            {
+                double[] cl = userItemMatrix.GetVerticalVector(i).Select(o => (double)o).ToArray();
+                double[] clPow = Array.ConvertAll(cl, x => x * x);
+                double[] xiCl = Array.ConvertAll(cl, x => x == 0 ? (double)0 : 1);
+
+                for (int j = i + 1; j < items; j++)
+                {
+                    double[] cm = userItemMatrix.GetVerticalVector(j).Select(o => (double)o).ToArray();
+
+                    double z1 = (double)ScalarProductVectors(cl, cm);
+
+                    double[] xiCm = Array.ConvertAll(cm, x => x == 0 ? (double)0 : 1);
+
+                    double z2 = (double)ScalarProductVectors(clPow, xiCm);
+
+                    double[] cmPow = Array.ConvertAll(cm, x => x * x);
+
+                    double z3 = (double)ScalarProductVectors(xiCl, cmPow);
+
+                    double similarityScore = 0;
+                    if (z2 * z3 != 0)
+                    {
+                        similarityScore = z1 / (Math.Sqrt(z2 * z3));
+                    }
+
+                    //Convert to integer value
+                    similarityMatrix[i, j] = Math.Floor((similarityScore * Q) + 0.5);
+                    similarityMatrix[j, i] = Math.Floor((similarityScore * Q) + 0.5);
+                }
+                Console.WriteLine(i + "/" + items);
             }
             return similarityMatrix;
         }
@@ -387,6 +492,61 @@ namespace SecretSharing
             return sm;
         }
 
+        public static double[] GetMostSimilarItemsToM(double[,] similarityMatrix, int m, int q, bool isPositivesOnly)
+        {
+            int vectorLength = similarityMatrix.GetLength(0);
+            Tuple<double, int>[] similarityScoreAndIndex = new Tuple<double, int>[vectorLength];
+            for (int i = 0; i < vectorLength; i++)
+            {
+                similarityScoreAndIndex[i] = new Tuple<double, int>(similarityMatrix[m, i], i);
+            }
+            Array.Sort(similarityScoreAndIndex, new ScoreAndIndexComparerDouble());
+            similarityScoreAndIndex = similarityScoreAndIndex.Take(q).ToArray();
+            double[] sm = new double[vectorLength];
+
+            foreach (var item in similarityScoreAndIndex)
+            {
+                if (isPositivesOnly)
+                {
+                    if (item.Item1 > 0)
+                    {
+                        sm[item.Item2] = item.Item1;
+                    }
+                }
+                else
+                {
+                    sm[item.Item2] = item.Item1;
+                }
+            }
+
+            return sm;
+        }
+
+        public static int GetPredictedRatingNoCrypto(int[,] userItemMatrix, int n, int m, int q)
+        {
+            var averageRating = userItemMatrix.GetAverageRatings()[m];
+
+            double[,] similarityMatrixNoCrypto = Protocols.CalcSimilarityMatrixNoCrypto(userItemMatrix);
+            var smNoCrypto = Protocols.GetMostSimilarItemsToM(similarityMatrixNoCrypto, m, q, true);
+
+            double[] RHatn = new double[userItemMatrix.GetLength(1)];
+            for (int i = 0; i < userItemMatrix.GetLength(1); i++)
+            {
+                int xiR = userItemMatrix[n, i] == 0 ? 0 : 1;
+                var averageRatingNoCrypto = userItemMatrix.GetAverageRatings()[i];
+                RHatn[i] = (userItemMatrix[n, i] - averageRatingNoCrypto) * xiR;
+            }
+
+            var mult1 = Protocols.ScalarProductVectors(smNoCrypto, RHatn);
+            var xiRn = userItemMatrix.GetXi().GetHorizontalVector(n).Select(o => (double)o).ToArray();
+
+            var mult2 = Protocols.ScalarProductVectors(smNoCrypto, xiRn);
+
+            var change = (double)mult1 / (double)mult2;
+            int predictedRating = (int)Math.Round(averageRating + change, 0);
+            return predictedRating;
+        }
+
         private static BigInteger RandomBigIntegerBelow(BigInteger N)
         {
             byte[] bytes = N.ToByteArray();
@@ -407,6 +567,13 @@ namespace SecretSharing
     public class ScoreAndIndexComparer : IComparer<Tuple<BigInteger, int>>
     {
         public int Compare(Tuple<BigInteger, int> x, Tuple<BigInteger, int> y)
+        {
+            return x.Item1.CompareTo(y.Item1) * -1;
+        }
+    }
+    public class ScoreAndIndexComparerDouble : IComparer<Tuple<double, int>>
+    {
+        public int Compare(Tuple<double, int> x, Tuple<double, int> y)
         {
             return x.Item1.CompareTo(y.Item1) * -1;
         }

@@ -225,7 +225,7 @@ namespace ProtocolTests
             var similarityMatrix = new BigInteger[4, 4] { { 0, 2, 3, 5 }, { 2, 0, 4, 1 }, { 3, 4, 0, 2 }, { 5, 1, 2, 0 } };
 
             // ACT
-            BigInteger[] items = Protocols.GetMostSimilarItemsToM(similarityMatrix, 1, 2);
+            BigInteger[] items = Protocols.GetMostSimilarItemsToM(similarityMatrix, 1, 2, true);
 
             // ASSERT
             Assert.Equal(items, new BigInteger[4] { 2, 0, 4, 0 });
@@ -253,7 +253,7 @@ namespace ProtocolTests
             List<BigInteger[]>[] ObfuscatedXiRShares = Protocols.ObfuscateShares(XiRShares);
 
 
-            var sm = Protocols.GetMostSimilarItemsToM(similarityMatrix, m, q);
+            var sm = Protocols.GetMostSimilarItemsToM(similarityMatrix, m, q, true);
             foreach (var RHatShare in RHatShares)
             {
                 BigInteger[] RHat_n = RHatShare.GetHorizontalVector(n);
@@ -284,9 +284,12 @@ namespace ProtocolTests
                 }
                 predictedRating += change;
             }
+            predictedRating = Math.Round(predictedRating, 0);
+
+            int expectedRating = Protocols.GetPredictedRatingNoCrypto(userItemMatrix, n, m, q);
 
             // ASSERT
-            Assert.Equal(1.707, Math.Round(predictedRating, 3));
+            Assert.Equal(expectedRating, predictedRating);
         }
     }
 }

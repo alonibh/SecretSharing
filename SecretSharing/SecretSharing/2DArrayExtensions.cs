@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Numerics;
 
 namespace SecretSharing
@@ -177,10 +178,10 @@ namespace SecretSharing
         /// <param name="matrix"></param>
         /// <param name="index"></param>
         /// <returns></returns>
-        public static double[] GetHorizontalVector(this double[,] matrix, int index)
+        public static int[] GetHorizontalVector(this int[,] matrix, int index)
         {
             int length = matrix.GetLength(1);
-            double[] vector = new double[length];
+            int[] vector = new int[length];
             for (int i = 0; i < length; i++)
             {
                 vector[i] = matrix[index, i];
@@ -206,7 +207,14 @@ namespace SecretSharing
                         nonZeroRatings++;
                     }
                 }
-                averageRatings[i] = ratingSum / nonZeroRatings;
+                if (nonZeroRatings == 0)
+                {
+                    averageRatings[i] = 0;
+                }
+                else
+                {
+                    averageRatings[i] = ratingSum / nonZeroRatings;
+                }
             }
             return averageRatings;
         }
@@ -270,6 +278,163 @@ namespace SecretSharing
             }
 
             return xiMatrix;
+        }
+
+        public static void SaveToFile(this BigInteger[,] matrix, string path)
+        {
+            List<string> lines = new List<string>();
+            int n = matrix.GetLength(0);
+            int m = matrix.GetLength(1);
+            for (int i = 0; i < n; i++)
+            {
+                for (int j = 0; j < m; j++)
+                {
+                    lines.Add(i + " " + j + " " + matrix[i, j]);
+                }
+            }
+            File.WriteAllLines(path, lines);
+        }
+
+        public static BigInteger[,] LoadBigIntegerMatrixFromFile(string path)
+        {
+            var lines = File.ReadAllLines(path);
+            int N = int.Parse(lines[lines.Length - 1].Split()[0]) + 1;
+            int M = int.Parse(lines[lines.Length - 1].Split()[1]) + 1;
+            BigInteger[,] matrix = new BigInteger[N, M];
+
+            foreach (var line in lines)
+            {
+                int n = int.Parse(line.Split()[0]);
+                int m = int.Parse(line.Split()[1]);
+                BigInteger rating = BigInteger.Parse(line.Split()[2]);
+                matrix[n, m] = rating;
+            }
+
+            return matrix;
+        }
+
+        public static void SaveToFile(this List<BigInteger[]>[] matrixArray, string path)
+        {
+            List<string> lines = new List<string>();
+            int length = matrixArray.Length;
+            int count = matrixArray[0].Count;
+            int items = matrixArray[0][0].Length;
+            for (int i = 0; i < length; i++)
+            {
+                for (int j = 0; j < count; j++)
+                {
+                    for (int k = 0; k < items; k++)
+                    {
+                        lines.Add(i + " " + j + " " + k + " " + matrixArray[i][j][k]);
+                    }
+                }
+            }
+            File.WriteAllLines(path, lines);
+        }
+
+        public static List<BigInteger[]>[] LoadBigIntegerMatrixArrayFromFile(string path)
+        {
+            var lines = File.ReadAllLines(path);
+            int length = int.Parse(lines[lines.Length - 1].Split()[0]) + 1;
+            int count = int.Parse(lines[lines.Length - 1].Split()[1]) + 1;
+            int items = int.Parse(lines[lines.Length - 1].Split()[2]) + 1;
+            var matrixArray = new List<BigInteger[]>[length];
+            foreach (var line in lines)
+            {
+                var splitted = line.Split();
+                int n = int.Parse(splitted[0]);
+                int m = int.Parse(splitted[1]);
+                int item = int.Parse(splitted[2]);
+                BigInteger rating = BigInteger.Parse(splitted[3]);
+                if (matrixArray[n] == null)
+                {
+                    matrixArray[n] = new List<BigInteger[]>();
+                    for (int i = 0; i < count; i++)
+                    {
+                        matrixArray[n].Add(new BigInteger[items]);
+                    }
+                }
+
+                matrixArray[n][m][item] = rating;
+            }
+
+            return matrixArray;
+        }
+
+        public static void SaveToFile(this int[,] matrix, string path)
+        {
+            List<string> lines = new List<string>();
+            int n = matrix.GetLength(0);
+            int m = matrix.GetLength(1);
+            for (int i = 0; i < n; i++)
+            {
+                for (int j = 0; j < m; j++)
+                {
+                    lines.Add(i + " " + j + " " + matrix[i, j]);
+                }
+            }
+            File.WriteAllLines(path, lines);
+        }
+
+        public static int[,] LoadIntMatrixFromFile(string path)
+        {
+            var lines = File.ReadAllLines(path);
+            int N = int.Parse(lines[lines.Length - 1].Split()[0]) + 1;
+            int M = int.Parse(lines[lines.Length - 1].Split()[1]) + 1;
+            int[,] matrix = new int[N, M];
+
+            foreach (var line in lines)
+            {
+                int n = int.Parse(line.Split()[0]);
+                int m = int.Parse(line.Split()[1]);
+                int rating = int.Parse(line.Split()[2]);
+                matrix[n, m] = rating;
+            }
+
+            return matrix;
+        }
+
+        public static void SaveToFile(this BigInteger[] vector, string path)
+        {
+            List<string> lines = new List<string>();
+            foreach (var entry in vector)
+            {
+                lines.Add(entry.ToString());
+            }
+
+            File.WriteAllLines(path, lines);
+        }
+
+        public static BigInteger[] LoadVectorFromFile(string path)
+        {
+            var lines = File.ReadAllLines(path);
+
+            BigInteger[] vector = new BigInteger[lines.Length];
+
+            for (int i = 0; i < lines.Length; i++)
+            {
+                vector[i] = BigInteger.Parse(lines[i]);
+            }
+
+            return vector;
+        }
+
+        public static List<(int, int)> GetNonZeroEntries(this int[,] matrix)
+        {
+            List<(int, int)> indecis = new List<(int, int)>();
+            int n = matrix.GetLength(0);
+            int m = matrix.GetLength(1);
+            for (int i = 0; i < n; i++)
+            {
+                for (int j = 0; j < m; j++)
+                {
+                    if (matrix[i, j] != 0)
+                    {
+                        indecis.Add((i, j));
+                    }
+                }
+            }
+            return indecis;
         }
     }
 }
