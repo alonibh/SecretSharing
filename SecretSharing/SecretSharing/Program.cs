@@ -74,7 +74,7 @@ namespace SecretSharing
                 //testingUserItemMatrix.SaveToFile("testingUserItemMatrix.txt");
 
                 similarityMatrix = Protocols.CalcSimilarityMatrix(trainingUserItemMatrix, D);
-                //BigInteger[,] similarityMatrix = Protocols.CalcSimilarityMatrixNoCrypto(trainingUserItemMatrix);
+                //double[,] similarityMatrixNoCrypto = Protocols.CalcSimilarityMatrixNoCrypto(trainingUserItemMatrix);
 
                 //similarityMatrix.SaveToFile("similarityMatrix.txt");
             }
