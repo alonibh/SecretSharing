@@ -9,43 +9,99 @@ namespace SecretSharing
     {
         static void Main(string[] args)
         {
+            //(int, int)[] pairs = new (int, int)[12]
+            //{
+            //    (1000, 1),
+            //    (1000, 2),
+            //    (1000, 4),
+            //    (1000, 8),
+            //    (1000, 16),
+            //    (1000, 32),
+            //    (2000, 1),
+            //    (2000, 2),
+            //    (2000, 4),
+            //    (2000, 8),
+            //    (2000, 16),
+            //    (2000, 32)
+            //};
+            //foreach (var pair in pairs)
+            //{
+            //    File.AppendAllText("stats.txt", $"K = {pair.Item1}, N = {pair.Item2}" + "\n");
+
+            //    for (int j = 0; j < 10; j++)
+            //    {
+            //        Protocols.CreateRandomSplits(pair.Item1, pair.Item2);
+            //    }
+            //}
+            //return;
+
             int[,] userItemMatrix = Protocols.ReadUserItemMatrix("ratings-distict-100K.dat");
 
             int N = userItemMatrix.GetLength(0); //users
             int M = userItemMatrix.GetLength(1); //items
             int k = 7; //vendors
+            int D = 5; //mediators
             int q = 10; // num of similar items
             int h = 6; // num of most recomended items to take
 
-            //var sets = userItemMatrix.SplitToTrainingAndTesting();
-            //var trainingUserItemMatrix = sets.Item1;
-            //var testingUserItemMatrix = sets.Item2;
-
-            //trainingUserItemMatrix.SaveToFile("trainingUserItemMatrix.txt");
-            var trainingUserItemMatrix = _2DArrayExtensions.LoadIntMatrixFromFile("trainingUserItemMatrix.txt");
-
-            //testingUserItemMatrix.SaveToFile("testingUserItemMatrix.txt");
-            var testingUserItemMatrix = _2DArrayExtensions.LoadIntMatrixFromFile("testingUserItemMatrix.txt");
+            bool loadFromFile = false;
+            bool calcAndSaveToFile = true;
 
             #region Computing the similarity matrix (Protocol 1+2)
 
-            //BigInteger[,] similarityMatrix = Protocols.CalcSimilarityMatrix(trainingUserItemMatrix, D);
-            //BigInteger[,] similarityMatrix = Protocols.CalcSimilarityMatrixNoCrypto(trainingUserItemMatrix);
+            int[,] trainingUserItemMatrix;
+            int[,] testingUserItemMatrix;
+            BigInteger[,] similarityMatrix;
 
-            //similarityMatrix.SaveToFile("similarityMatrix.txt");
-            var similarityMatrix = _2DArrayExtensions.LoadBigIntegerMatrixFromFile("similarityMatrix.txt");
+            if (loadFromFile)
+            {
+                trainingUserItemMatrix = _2DArrayExtensions.LoadIntMatrixFromFile("trainingUserItemMatrix.txt");
+                testingUserItemMatrix = _2DArrayExtensions.LoadIntMatrixFromFile("testingUserItemMatrix.txt");
+                similarityMatrix = _2DArrayExtensions.LoadBigIntegerMatrixFromFile("similarityMatrix.txt");
+
+            }
+            else if (calcAndSaveToFile)
+            {
+                var sets = userItemMatrix.SplitToTrainingAndTesting();
+
+                trainingUserItemMatrix = sets.Item1;
+                testingUserItemMatrix = sets.Item2;
+
+
+                Protocols.RunProtocol2RuntimeTest(trainingUserItemMatrix, D);
+                return;
+                //trainingUserItemMatrix.SaveToFile("trainingUserItemMatrix.txt");
+                //testingUserItemMatrix.SaveToFile("testingUserItemMatrix.txt");
+
+                similarityMatrix = Protocols.CalcSimilarityMatrix(trainingUserItemMatrix, D);
+                //BigInteger[,] similarityMatrix = Protocols.CalcSimilarityMatrixNoCrypto(trainingUserItemMatrix);
+                similarityMatrix.SaveToFile("similarityMatrix.txt");
+            }
+
+            return;
 
             #endregion
 
             #region Secret sharing R_hat and xiR using AON (Protocol 3)
 
-            //var RHatShares = Protocols.SecretShareRHat(trainingUserItemMatrix, D);
-            //RHatShares.SaveToFile("RHatShares.txt");
-            var RHatShares = _2DArrayExtensions.LoadBigIntegerMatrixArrayFromFile("RHatShares.txt");
+            List<BigInteger[]>[] RHatShares;
+            List<BigInteger[]>[] XiRShares;
 
-            //var XiRShares = Protocols.SecretShareXiR(trainingUserItemMatrix, D);
-            //XiRShares.SaveToFile("XiRShares.txt");
-            var XiRShares = _2DArrayExtensions.LoadBigIntegerMatrixArrayFromFile("XiRShares.txt");
+            if (loadFromFile)
+            {
+                RHatShares = _2DArrayExtensions.LoadBigIntegerMatrixArrayFromFile("RHatShares.txt");
+                XiRShares = _2DArrayExtensions.LoadBigIntegerMatrixArrayFromFile("XiRShares.txt");
+
+            }
+            else if (calcAndSaveToFile)
+            {
+
+                RHatShares = Protocols.SecretShareRHat(trainingUserItemMatrix, D);
+                RHatShares.SaveToFile("RHatShares.txt");
+
+                XiRShares = Protocols.SecretShareXiR(trainingUserItemMatrix, D);
+                XiRShares.SaveToFile("XiRShares.txt");
+            }
 
             #endregion
 

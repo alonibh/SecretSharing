@@ -1,4 +1,5 @@
 ﻿using LumenWorks.Framework.IO.Csv;
+using MathNet.Numerics.Distributions;
 using SecretSharingProtocol;
 using System;
 using System.Collections.Generic;
@@ -287,6 +288,69 @@ namespace SecretSharing
             return similarityMatrix;
         }
 
+        public static void RunProtocol2RuntimeTest(int[,] userItemMatrix, int numOfShares)
+        {
+            int times = 300;
+            int timesLeft = times;
+            int items = userItemMatrix.GetLength(1);
+            BigInteger[,] similarityMatrix = new BigInteger[items, items];
+            var watch = System.Diagnostics.Stopwatch.StartNew();
+            for (int i = 0; i < items; i++)
+            {
+                BigInteger[] cl = userItemMatrix.GetVerticalVector(i).Select(o => (BigInteger)o).ToArray();
+                var clShares = ShamirSecretSharing(cl, numOfShares);
+                BigInteger[] clPow = Array.ConvertAll(cl, x => x * x);
+                var clPowShares = ShamirSecretSharing(clPow, numOfShares);
+                BigInteger[] xiCl = Array.ConvertAll(cl, x => x == 0 ? (BigInteger)0 : 1);
+                var xiClShares = ShamirSecretSharing(xiCl, numOfShares);
+
+                for (int j = i + 1; j < items; j++)
+                {
+                    if (timesLeft == 0)
+                    {
+                        break;
+                    }
+
+                    BigInteger[] cm = userItemMatrix.GetVerticalVector(j).Select(o => (BigInteger)o).ToArray();
+
+                    var cmShares = ShamirSecretSharing(cm, numOfShares);
+                    double z1 = ScalarProductShares(clShares, cmShares);
+
+                    BigInteger[] xiCm = Array.ConvertAll(cm, x => x == 0 ? (BigInteger)0 : 1);
+
+                    var xiCmShares = ShamirSecretSharing(xiCm, numOfShares);
+                    double z2 = ScalarProductShares(clPowShares, xiCmShares);
+
+                    BigInteger[] cmPow = Array.ConvertAll(cm, x => x * x);
+
+                    var cmPowShares = ShamirSecretSharing(cmPow, numOfShares);
+                    double z3 = ScalarProductShares(xiClShares, cmPowShares);
+
+                    double similarityScore = 0;
+                    if (z2 * z3 != 0)
+                    {
+                        similarityScore = z1 / (Math.Sqrt(z2 * z3));
+                    }
+
+                    //Convert to integer value
+                    similarityMatrix[i, j] = (BigInteger)Math.Floor((similarityScore * Q) + 0.5);
+                    similarityMatrix[j, i] = (BigInteger)Math.Floor((similarityScore * Q) + 0.5);
+
+                    // the code that you want to measure comes here
+                    Console.WriteLine(j + "/" + items);
+                    timesLeft--;
+
+                }
+                if (timesLeft == 0)
+                {
+                    break;
+                }
+            }
+            watch.Stop();
+            var elapsedMs = watch.ElapsedMilliseconds;
+            Console.WriteLine(elapsedMs / times);
+        }
+
         public static double[,] CalcSimilarityMatrixNoCrypto(int[,] userItemMatrix)
         {
             int items = userItemMatrix.GetLength(1);
@@ -545,6 +609,56 @@ namespace SecretSharing
             var change = (double)mult1 / (double)mult2;
             int predictedRating = (int)Math.Round(averageRating + change, 0);
             return predictedRating;
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="numOfItems"></param>
+        /// <param name="numOfVendors"></param>
+        /// <returns>A tuple of number of items and starting index</returns>
+        public static (int, int)[] CreateRandomSplits(int numOfItems, int numOfVendors)
+        {
+            double mean = 0;
+            double stdDev = 1;
+
+            Normal normalDist = new Normal(mean, stdDev);
+            List<double> x_k = new List<double>(); // Random Gaussian values
+            for (int i = 0; i < numOfVendors; i++)
+            {
+                var sample = normalDist.Sample();
+                x_k.Add(sample);
+            }
+
+            List<double> y_k = new List<double>();
+            for (int i = 0; i < numOfVendors; i++)
+            {
+                y_k.Add((x_k[i] * numOfItems) / (10 * numOfVendors));
+            }
+
+            double a = y_k.Sum() / numOfVendors;
+
+            for (int i = 0; i < numOfVendors; i++)
+            {
+                y_k[i] -= a;
+            }
+
+            List<double> m_k = new List<double>();
+            for (int i = 0; i < numOfVendors - 1; i++)
+            {
+                m_k.Add(Math.Floor((numOfItems / numOfVendors) + y_k[i] + 0.5));
+            }
+            double lastSum = numOfItems - m_k.Sum();
+            m_k.Add(lastSum);
+
+            for (int i = 0; i < numOfVendors; i++)
+            {
+                File.AppendAllText("stats.txt", m_k[i].ToString() + "\n");
+                Console.WriteLine(m_k[i]);
+            }
+            File.AppendAllText("stats.txt", "\n");
+            Console.WriteLine("---------------------------------------------");
+            return null;
         }
 
         private static BigInteger RandomBigIntegerBelow(BigInteger N)

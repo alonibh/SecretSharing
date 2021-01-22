@@ -436,5 +436,26 @@ namespace SecretSharing
             }
             return indecis;
         }
+
+        /// <summary>
+        /// For the YP Protocol
+        /// </summary>
+        /// <param name="matrix"></param>
+        /// <returns></returns>
+        public static int GetAverageRating(this int[,] matrix)
+        {
+            int sum = 0;
+            int n = matrix.GetLength(0);
+            int m = matrix.GetLength(1);
+            for (int i = 0; i < n; i++)
+            {
+                for (int j = 0; j < m; j++)
+                {
+                    sum += matrix[i, j];
+                }
+            }
+            int average = sum / (n * m);
+            return average;
+        }
     }
 }
