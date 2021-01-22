@@ -37,10 +37,10 @@ namespace SecretSharing
 
             int[,] userItemMatrix = Protocols.ReadUserItemMatrix("ratings-distict-100K.dat");
 
-            int N = userItemMatrix.GetLength(0); //users
-            int M = userItemMatrix.GetLength(1); //items
-            int k = 7; //vendors
-            int D = 5; //mediators
+            int N = userItemMatrix.GetLength(0); // users
+            int M = userItemMatrix.GetLength(1); // items
+            int k = 7; // vendors
+            int D = 5; // mediators
             int q = 10; // num of similar items
             int h = 6; // num of most recomended items to take
 
