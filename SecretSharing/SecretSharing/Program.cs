@@ -53,6 +53,9 @@ namespace SecretSharing
             int[,] testingUserItemMatrix;
             BigInteger[,] similarityMatrix;
 
+            //Protocols.RunProtocol2RuntimeTest(trainingUserItemMatrix, D);
+            //return;
+
             if (loadFromFile)
             {
                 trainingUserItemMatrix = _2DArrayExtensions.LoadIntMatrixFromFile("trainingUserItemMatrix.txt");
@@ -67,15 +70,13 @@ namespace SecretSharing
                 trainingUserItemMatrix = sets.Item1;
                 testingUserItemMatrix = sets.Item2;
 
-
-                Protocols.RunProtocol2RuntimeTest(trainingUserItemMatrix, D);
-                return;
                 //trainingUserItemMatrix.SaveToFile("trainingUserItemMatrix.txt");
                 //testingUserItemMatrix.SaveToFile("testingUserItemMatrix.txt");
 
                 similarityMatrix = Protocols.CalcSimilarityMatrix(trainingUserItemMatrix, D);
                 //BigInteger[,] similarityMatrix = Protocols.CalcSimilarityMatrixNoCrypto(trainingUserItemMatrix);
-                similarityMatrix.SaveToFile("similarityMatrix.txt");
+
+                //similarityMatrix.SaveToFile("similarityMatrix.txt");
             }
 
             return;
