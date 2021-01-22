@@ -274,7 +274,7 @@ namespace SecretSharing
                 watch = System.Diagnostics.Stopwatch.StartNew();
 
                 var options = new ParallelOptions();
-                //options.MaxDegreeOfParallelism = 100;
+                options.MaxDegreeOfParallelism = 75;
                 Parallel.For(i + 1, items, options, (j) =>
                  {
                      double z1 = ScalarProductShares(clSharesArray[i], clSharesArray[j]);
