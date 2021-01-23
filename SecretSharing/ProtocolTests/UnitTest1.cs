@@ -1,5 +1,4 @@
 using SecretSharing;
-using SecretSharingProtocol;
 using System;
 using System.Collections.Generic;
 using System.Numerics;
@@ -14,11 +13,11 @@ namespace ProtocolTests
         {
             // ARRANGE
             BigInteger[] vector = new BigInteger[5] {
-                BigInteger.Parse("5554584612153615861"),
-                BigInteger.Parse("15891351815151"),
-                BigInteger.Parse("41110135115151"),
-                BigInteger.Parse("18151818115151511"),
-                BigInteger.Parse("18188151848131841")
+                BigInteger.Parse("214748647"),
+                BigInteger.Parse("214743647"),
+                BigInteger.Parse("214783647"),
+                BigInteger.Parse("214483647"),
+                BigInteger.Parse("217483647")
             };
 
             // ACT
@@ -30,7 +29,24 @@ namespace ProtocolTests
         }
 
         [Fact]
-        public void TestCalcSimilarityMatrix()
+        public void TestCalcSimilarityMatrix3Mediators()
+        {
+            // ARRANGE
+            int[,] userItemMatrix = new int[2, 2] { { 2, 5 }, { 3, 4 } };
+
+            //ACT
+            var similarityMatrix = Protocols.CalcSimilarityMatrix(userItemMatrix, 3);
+            var similarityMatrixNoCrypto = Protocols.CalcSimilarityMatrixNoCrypto(userItemMatrix);
+
+            //ASSERT
+            double Q = 100;
+            var similarityScore = (2 * 5 + 3 * 4) / Math.Sqrt((4 + 9) * (25 + 16));
+            var integeredSimilarityScore = (BigInteger)Math.Floor((similarityScore * Q) + 0.5);
+            Assert.Equal(integeredSimilarityScore, similarityMatrix[0, 1]);
+        }
+
+        [Fact]
+        public void TestCalcSimilarityMatrix5Mediators()
         {
             // ARRANGE
             int[,] userItemMatrix = new int[2, 2] { { 2, 5 }, { 3, 4 } };
@@ -40,13 +56,11 @@ namespace ProtocolTests
             var similarityMatrixNoCrypto = Protocols.CalcSimilarityMatrixNoCrypto(userItemMatrix);
 
             //ASSERT
-            double Q = 1296859633245;
+            double Q = 100;
             var similarityScore = (2 * 5 + 3 * 4) / Math.Sqrt((4 + 9) * (25 + 16));
             var integeredSimilarityScore = (BigInteger)Math.Floor((similarityScore * Q) + 0.5);
             Assert.Equal(integeredSimilarityScore, similarityMatrix[0, 1]);
         }
-
-
 
         [Fact]
         public void TestScalarProductBetweenShares()

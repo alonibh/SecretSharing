@@ -13,8 +13,9 @@ namespace SecretSharing
 {
     public static class Protocols
     {
-        public static readonly BigInteger PRIME = BigInteger.Parse("2147483647"); // change to 2147483647
-        public static readonly double Q = 1296859633245; // change to 100
+        public static readonly BigInteger PRIME = 2147483647; // change to double (?)
+
+        public static readonly double Q = 100;
 
         public static int[,] ReadUserItemMatrix(string path)
         {
@@ -75,7 +76,7 @@ namespace SecretSharing
                 BigInteger[] share = new BigInteger[vector.Length];
                 for (int j = 0; j < vector.Length; j++)
                 {
-                    share[j] = RandomBigIntegerBelow(PRIME);
+                    share[j] = new Random().Next(1, (int)PRIME);
                     sharesSum[j] += share[j];
                 }
                 shares.Add(share);
@@ -141,7 +142,9 @@ namespace SecretSharing
         public static List<Coordinate[]> ShamirSecretSharing(BigInteger[] vector, int numOfShares)
         {
             if (numOfShares != 3 && numOfShares != 5)
+            {
                 throw new Exception("Invalid number of shares, has to be 3 or 5");
+            }
 
             var shares = new List<Coordinate[]>();
             for (int i = 0; i < numOfShares; i++)
@@ -162,7 +165,10 @@ namespace SecretSharing
                         var y = entry + ((i + 1) * a);
                         y %= PRIME;
                         if (y < 0)
+                        {
                             y += PRIME;
+                        }
+
                         shares[i][shareCount] = new Coordinate(x, y);
                     }
                     shareCount++;
@@ -183,7 +189,10 @@ namespace SecretSharing
                         var y = (entry + ((i + 1) * a) + ((BigInteger)(Math.Pow(i + 1, 2)) * b));
                         y %= PRIME;
                         if (y < 0)
+                        {
                             y += PRIME;
+                        }
+
                         shares[i][shareCount] = new Coordinate(x, y);
                     }
                     shareCount++;
