@@ -13,8 +13,8 @@ namespace SecretSharing
 {
     public static class Protocols
     {
-        public static readonly BigInteger PRIME = BigInteger.Parse("1298074214633706835075030044377087");
-        public static readonly double Q = 1296859633245;
+        public static readonly BigInteger PRIME = BigInteger.Parse("1298074214633706835075030044377087"); // change to 2147483647
+        public static readonly double Q = 1296859633245; // change to 100
 
         public static int[,] ReadUserItemMatrix(string path)
         {
@@ -64,7 +64,6 @@ namespace SecretSharing
 
             return userItemMatrix;
         }
-
 
         public static List<BigInteger[]> AllOrNothingSecretSharing(BigInteger[] vector, int numOfShares)
         {
@@ -299,69 +298,6 @@ namespace SecretSharing
             }
 
             return similarityMatrix;
-        }
-
-        public static void RunProtocol2RuntimeTest(int[,] userItemMatrix, int numOfShares)
-        {
-            int times = 300;
-            int timesLeft = times;
-            int items = userItemMatrix.GetLength(1);
-            BigInteger[,] similarityMatrix = new BigInteger[items, items];
-            var watch = System.Diagnostics.Stopwatch.StartNew();
-            for (int i = 0; i < items; i++)
-            {
-                BigInteger[] cl = userItemMatrix.GetVerticalVector(i).Select(o => (BigInteger)o).ToArray();
-                var clShares = ShamirSecretSharing(cl, numOfShares);
-                BigInteger[] clPow = Array.ConvertAll(cl, x => x * x);
-                var clPowShares = ShamirSecretSharing(clPow, numOfShares);
-                BigInteger[] xiCl = Array.ConvertAll(cl, x => x == 0 ? (BigInteger)0 : 1);
-                var xiClShares = ShamirSecretSharing(xiCl, numOfShares);
-
-                for (int j = i + 1; j < items; j++)
-                {
-                    if (timesLeft == 0)
-                    {
-                        break;
-                    }
-
-                    BigInteger[] cm = userItemMatrix.GetVerticalVector(j).Select(o => (BigInteger)o).ToArray();
-
-                    var cmShares = ShamirSecretSharing(cm, numOfShares);
-                    double z1 = ScalarProductShares(clShares, cmShares);
-
-                    BigInteger[] xiCm = Array.ConvertAll(cm, x => x == 0 ? (BigInteger)0 : 1);
-
-                    var xiCmShares = ShamirSecretSharing(xiCm, numOfShares);
-                    double z2 = ScalarProductShares(clPowShares, xiCmShares);
-
-                    BigInteger[] cmPow = Array.ConvertAll(cm, x => x * x);
-
-                    var cmPowShares = ShamirSecretSharing(cmPow, numOfShares);
-                    double z3 = ScalarProductShares(xiClShares, cmPowShares);
-
-                    double similarityScore = 0;
-                    if (z2 * z3 != 0)
-                    {
-                        similarityScore = z1 / (Math.Sqrt(z2 * z3));
-                    }
-
-                    //Convert to integer value
-                    similarityMatrix[i, j] = (BigInteger)Math.Floor((similarityScore * Q) + 0.5);
-                    similarityMatrix[j, i] = (BigInteger)Math.Floor((similarityScore * Q) + 0.5);
-
-                    // the code that you want to measure comes here
-                    Console.WriteLine(j + "/" + items);
-                    timesLeft--;
-
-                }
-                if (timesLeft == 0)
-                {
-                    break;
-                }
-            }
-            watch.Stop();
-            var elapsedMs = watch.ElapsedMilliseconds;
-            Console.WriteLine(elapsedMs / times);
         }
 
         public static double[,] CalcSimilarityMatrixNoCrypto(int[,] userItemMatrix)

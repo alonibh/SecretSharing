@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SecretSharingProtocol;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
@@ -9,6 +10,91 @@ namespace SecretSharing
     {
         static void Main(string[] args)
         {
+            List<Coordinate[]> clShares = new List<Coordinate[]>();
+            clShares.Add(new Coordinate[5]
+            {
+                new Coordinate(1,73),
+                new Coordinate(1,133),
+                new Coordinate(1,225),
+                new Coordinate(1,349),
+                new Coordinate(1,505)
+            });
+            clShares.Add(new Coordinate[5]
+            {
+                new Coordinate(2,84),
+                new Coordinate(2,144),
+                new Coordinate(2,236),
+                new Coordinate(2,360),
+                new Coordinate(2,516)
+            });
+            clShares.Add(new Coordinate[5]
+            {
+                new Coordinate(3,101),
+                new Coordinate(3,161),
+                new Coordinate(3,253),
+                new Coordinate(3,377),
+                new Coordinate(3,533)
+            });
+            clShares.Add(new Coordinate[5]
+            {
+                new Coordinate(4,124),
+                new Coordinate(4,184),
+                new Coordinate(4,276),
+                new Coordinate(4,400),
+                new Coordinate(4,556)
+            });
+            clShares.Add(new Coordinate[5]
+            {
+                new Coordinate(5,153),
+                new Coordinate(5,213),
+                new Coordinate(5,305),
+                new Coordinate(5,429),
+                new Coordinate(5,585)
+            });
+
+            List<Coordinate[]> cmShares = new List<Coordinate[]>();
+            cmShares.Add(new Coordinate[5]
+            {
+                new Coordinate(1,67),
+                new Coordinate(1,129),
+                new Coordinate(1,221),
+                new Coordinate(1,343),
+                new Coordinate(1,495)
+            });
+            cmShares.Add(new Coordinate[5]
+            {
+                new Coordinate(2,78),
+                new Coordinate(2,140),
+                new Coordinate(2,232),
+                new Coordinate(2,354),
+                new Coordinate(2,506)
+            });
+            cmShares.Add(new Coordinate[5]
+            {
+                new Coordinate(3,95),
+                new Coordinate(3,157),
+                new Coordinate(3,249),
+                new Coordinate(3,371),
+                new Coordinate(3,523)
+            });
+            cmShares.Add(new Coordinate[5]
+            {
+                new Coordinate(4,118),
+                new Coordinate(4,180),
+                new Coordinate(4,272),
+                new Coordinate(4,394),
+                new Coordinate(4,546)
+            });
+            cmShares.Add(new Coordinate[5]
+            {
+                new Coordinate(5,147),
+                new Coordinate(5,209),
+                new Coordinate(5,301),
+                new Coordinate(5,423),
+                new Coordinate(5,575)
+            });
+            double z1 = Protocols.ScalarProductShares(clShares, cmShares);
+
             //(int, int)[] pairs = new (int, int)[12]
             //{
             //    (1000, 1),
