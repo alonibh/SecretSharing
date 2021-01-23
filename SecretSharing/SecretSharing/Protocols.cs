@@ -13,7 +13,7 @@ namespace SecretSharing
 {
     public static class Protocols
     {
-        public static readonly BigInteger PRIME = BigInteger.Parse("1298074214633706835075030044377087"); // change to 2147483647
+        public static readonly BigInteger PRIME = BigInteger.Parse("2147483647"); // change to 2147483647
         public static readonly double Q = 1296859633245; // change to 100
 
         public static int[,] ReadUserItemMatrix(string path)
@@ -140,7 +140,8 @@ namespace SecretSharing
         /// <returns>Shares array for each of the mediators</returns>
         public static List<Coordinate[]> ShamirSecretSharing(BigInteger[] vector, int numOfShares)
         {
-            int numOfSharesForRecovery = (numOfShares - 1) / 2;
+            if (numOfShares != 3 && numOfShares != 5)
+                throw new Exception("Invalid number of shares, has to be 3 or 5");
 
             var shares = new List<Coordinate[]>();
             for (int i = 0; i < numOfShares; i++)
@@ -148,48 +149,48 @@ namespace SecretSharing
                 shares.Add(new Coordinate[vector.Length]);
             }
 
-            var shamirScheme = new ShamirSecretSharingScheme();
-
-            int shareCount = 0;
-            foreach (int entry in vector)
+            if (numOfShares == 3)
             {
-                List<Coordinate> entryShares = shamirScheme.Shamir(entry, PRIME, numOfShares, numOfSharesForRecovery, false);
-
-                int indexCount = 0;
-                foreach (var share in entryShares)
+                int shareCount = 0;
+                foreach (int entry in vector)
                 {
-                    shares[indexCount][shareCount] = share;
-                    indexCount++;
+                    BigInteger a = new Random().Next(2, int.MaxValue);
+
+                    for (int i = 0; i < 3; i++)
+                    {
+                        int x = i + 1;
+                        var y = entry + ((i + 1) * a);
+                        y %= PRIME;
+                        if (y < 0)
+                            y += PRIME;
+                        shares[i][shareCount] = new Coordinate(x, y);
+                    }
+                    shareCount++;
                 }
-                shareCount++;
+            }
+
+            if (numOfShares == 5)
+            {
+                int shareCount = 0;
+                foreach (BigInteger entry in vector)
+                {
+                    BigInteger a = new Random().Next(2, int.MaxValue);
+                    BigInteger b = new Random().Next(2, int.MaxValue);
+
+                    for (int i = 0; i < 5; i++)
+                    {
+                        int x = i + 1;
+                        var y = (entry + ((i + 1) * a) + ((BigInteger)(Math.Pow(i + 1, 2)) * b));
+                        y %= PRIME;
+                        if (y < 0)
+                            y += PRIME;
+                        shares[i][shareCount] = new Coordinate(x, y);
+                    }
+                    shareCount++;
+                }
             }
 
             return shares;
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="shares">List of arrays of shares, where each array contains one share of eash secret</param>
-        /// <returns></returns>
-        public static BigInteger[] ReconstructShamirSecret(List<Coordinate[]> shares)
-        {
-            BigInteger[] secretVector = new BigInteger[shares[0].Length];
-            var shamirScheme = new ShamirSecretSharingScheme();
-
-            for (int shareCount = 0; shareCount < shares[0].Length; shareCount++)
-            {
-                List<Coordinate> coordinates = new List<Coordinate>();
-                for (int indexCount = 0; indexCount < shares.Count; indexCount++)
-                {
-                    coordinates.Add(shares[indexCount][shareCount]);
-                }
-                var secret = shamirScheme.deShamir(coordinates, PRIME);
-
-                secretVector[shareCount] = secret;
-            }
-
-            return secretVector;
         }
 
         /// <summary>
@@ -208,7 +209,7 @@ namespace SecretSharing
                 for (int shareCount = 0; shareCount < clShares[0].Length; shareCount++)
                 {
                     var newX = clShares[indexCount][shareCount].X;
-                    var newY = clShares[indexCount][shareCount].Y * cmShares[indexCount][shareCount].Y;
+                    var newY = (clShares[indexCount][shareCount].Y * cmShares[indexCount][shareCount].Y) % PRIME;
                     multCoordinates[shareCount] = new Coordinate(newX, newY);
                 }
                 multShares.Add(multCoordinates);
@@ -227,9 +228,20 @@ namespace SecretSharing
                 coordinates.Add(new Coordinate(sumX, sumY));
             }
 
-            var shamirScheme = new ShamirSecretSharingScheme();
+            BigInteger secret = 0;
+            if (coordinates.Count == 3)
+            {
+                secret = (3 * (coordinates[0].Y - coordinates[1].Y) + coordinates[2].Y) % PRIME;
+            }
+            if (coordinates.Count == 5)
+            {
+                secret = ((5 * (coordinates[0].Y - coordinates[3].Y)) - (10 * (coordinates[1].Y - coordinates[2].Y)) + coordinates[4].Y) % PRIME;
+            }
 
-            var secret = shamirScheme.deShamir(coordinates, PRIME);
+            if (secret < 0)
+            {
+                secret += PRIME;
+            }
 
             return (double)secret;
         }
@@ -248,8 +260,9 @@ namespace SecretSharing
             List<Coordinate[]>[] clPowSharesArray = new List<Coordinate[]>[items];
             List<Coordinate[]>[] xiClSharesArray = new List<Coordinate[]>[items];
 
-            var watch = System.Diagnostics.Stopwatch.StartNew();
-            Parallel.For(0, items, (i) =>
+            //var watch = System.Diagnostics.Stopwatch.StartNew();
+            //Parallel.For(0, items, (i) =>
+            for (int i = 0; i < items; i++)
             {
                 BigInteger[] cl = userItemMatrix.GetVerticalVector(i).Select(o => (BigInteger)o).ToArray();
                 var clShares = ShamirSecretSharing(cl, numOfShares);
@@ -262,39 +275,42 @@ namespace SecretSharing
                 BigInteger[] xiCl = Array.ConvertAll(cl, x => x == 0 ? (BigInteger)0 : 1);
                 var xiClShares = ShamirSecretSharing(xiCl, numOfShares);
                 xiClSharesArray[i] = xiClShares;
-            });
-            watch.Stop();
-            var elapsedMs = watch.ElapsedMilliseconds;
+                //});
+            }
+            //watch.Stop();
+            //var elapsedMs = watch.ElapsedMilliseconds;
 
-            Console.WriteLine($"Phase 1 - done in {elapsedMs} MS");
+            //Console.WriteLine($"Phase 1 - done in {elapsedMs} MS");
 
             for (int i = 0; i < items; i++)
             {
-                watch = System.Diagnostics.Stopwatch.StartNew();
+                //watch = System.Diagnostics.Stopwatch.StartNew();
 
                 var options = new ParallelOptions();
-                options.MaxDegreeOfParallelism = 75;
-                Parallel.For(i + 1, items, options, (j) =>
-                 {
-                     double z1 = ScalarProductShares(clSharesArray[i], clSharesArray[j]);
+                options.MaxDegreeOfParallelism = 60;
+                for (int j = i + 1; j < items; j++)
+                //Parallel.For(i + 1, items, options, (j) =>
+                {
+                    double z1 = ScalarProductShares(clSharesArray[i], clSharesArray[j]);
 
-                     double z2 = ScalarProductShares(clPowSharesArray[i], xiClSharesArray[j]);
+                    double z2 = ScalarProductShares(clPowSharesArray[i], xiClSharesArray[j]);
 
-                     double z3 = ScalarProductShares(xiClSharesArray[i], clPowSharesArray[j]);
+                    double z3 = ScalarProductShares(xiClSharesArray[i], clPowSharesArray[j]);
 
-                     double similarityScore = 0;
-                     if (z2 * z3 != 0)
-                     {
-                         similarityScore = z1 / (Math.Sqrt(z2 * z3));
-                     }
+                    double similarityScore = 0;
+                    if (z2 * z3 != 0)
+                    {
+                        similarityScore = z1 / (Math.Sqrt(z2 * z3));
+                    }
 
-                     //Convert to integer value
-                     similarityMatrix[i, j] = (BigInteger)Math.Floor((similarityScore * Q) + 0.5);
-                     similarityMatrix[j, i] = (BigInteger)Math.Floor((similarityScore * Q) + 0.5);
-                 });
-                watch.Stop();
-                elapsedMs = watch.ElapsedMilliseconds;
-                Console.WriteLine($"{i}/{items} done in {elapsedMs} MS");
+                    //Convert to integer value
+                    similarityMatrix[i, j] = (BigInteger)Math.Floor((similarityScore * Q) + 0.5);
+                    similarityMatrix[j, i] = (BigInteger)Math.Floor((similarityScore * Q) + 0.5);
+                    //});
+                }
+                //watch.Stop();
+                //elapsedMs = watch.ElapsedMilliseconds;
+                //Console.WriteLine($"{i}/{items} done in {elapsedMs} MS");
             }
 
             return similarityMatrix;
@@ -335,7 +351,6 @@ namespace SecretSharing
                     similarityMatrix[i, j] = Math.Floor((similarityScore * Q) + 0.5);
                     similarityMatrix[j, i] = Math.Floor((similarityScore * Q) + 0.5);
                 }
-                Console.WriteLine(i + "/" + items);
             }
             return similarityMatrix;
         }

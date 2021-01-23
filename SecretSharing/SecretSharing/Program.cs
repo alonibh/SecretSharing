@@ -10,6 +10,7 @@ namespace SecretSharing
     {
         static void Main(string[] args)
         {
+            #region vector mult test
             List<Coordinate[]> clShares = new List<Coordinate[]>();
             clShares.Add(new Coordinate[5]
             {
@@ -94,33 +95,12 @@ namespace SecretSharing
                 new Coordinate(5,575)
             });
             double z1 = Protocols.ScalarProductShares(clShares, cmShares);
+            #endregion
 
-            //(int, int)[] pairs = new (int, int)[12]
-            //{
-            //    (1000, 1),
-            //    (1000, 2),
-            //    (1000, 4),
-            //    (1000, 8),
-            //    (1000, 16),
-            //    (1000, 32),
-            //    (2000, 1),
-            //    (2000, 2),
-            //    (2000, 4),
-            //    (2000, 8),
-            //    (2000, 16),
-            //    (2000, 32)
-            //};
-            //foreach (var pair in pairs)
-            //{
-            //    File.AppendAllText("stats.txt", $"K = {pair.Item1}, N = {pair.Item2}" + "\n");
+            //BigInteger[] vector = new BigInteger[2] { 68,128 };
+            //Protocols.ShamirSecretSharing(vector, 3);
 
-            //    for (int j = 0; j < 10; j++)
-            //    {
-            //        Protocols.CreateRandomSplits(pair.Item1, pair.Item2);
-            //    }
-            //}
-            //return;
-
+            return;
             int[,] userItemMatrix = Protocols.ReadUserItemMatrix("ratings-distict-100K.dat");
 
             int N = userItemMatrix.GetLength(0); // users

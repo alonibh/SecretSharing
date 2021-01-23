@@ -30,21 +30,6 @@ namespace ProtocolTests
         }
 
         [Fact]
-        public void TestShamirSharingAndReconstruction()
-        {
-            // ARRANGE
-            BigInteger[] secretVector = new BigInteger[6] { 0, 1, 2, 3, 4, 5 };
-
-            // ACT
-            var shares = Protocols.ShamirSecretSharing(secretVector, 10);
-            var returnedSecretVector = Protocols.ReconstructShamirSecret(shares);
-
-            // ASSERT
-            Assert.Equal(secretVector, returnedSecretVector);
-
-        }
-
-        [Fact]
         public void TestCalcSimilarityMatrix()
         {
             // ARRANGE
@@ -52,6 +37,7 @@ namespace ProtocolTests
 
             //ACT
             var similarityMatrix = Protocols.CalcSimilarityMatrix(userItemMatrix, 5);
+            var similarityMatrixNoCrypto = Protocols.CalcSimilarityMatrixNoCrypto(userItemMatrix);
 
             //ASSERT
             double Q = 1296859633245;
@@ -60,30 +46,7 @@ namespace ProtocolTests
             Assert.Equal(integeredSimilarityScore, similarityMatrix[0, 1]);
         }
 
-        [Fact]
-        public void TestProductBetweenShares()
-        {
-            // ARRANGE
-            var p = BigInteger.Parse("71");
-            ShamirSecretSharingScheme sss = new ShamirSecretSharingScheme();
-            BigInteger firstSecret = 4;
-            BigInteger secondeSecret = 5;
 
-            var firstShares = sss.Shamir(firstSecret, p, 5, 2, false);
-            var secondShares = sss.Shamir(secondeSecret, p, 5, 2, false);
-
-            var sumShares = new List<Coordinate>();
-            for (int i = 0; i < firstShares.Count; i++)
-            {
-                sumShares.Add(new Coordinate(firstShares[i].X, firstShares[i].Y * secondShares[i].Y));
-            }
-
-            // ACT
-            var res = sss.deShamir(sumShares, p);
-
-            // ASSERT
-            Assert.Equal(firstSecret * secondeSecret, res);
-        }
 
         [Fact]
         public void TestScalarProductBetweenShares()
@@ -99,27 +62,6 @@ namespace ProtocolTests
 
             // ASSERT
             Assert.Equal(37, res);
-        }
-
-        [Fact]
-        public void TestShamirVecrotScalarProductBy2()
-        {
-            // ARRANGE
-            double secret = 17;
-            var prime = BigInteger.Parse("1298074214633706835075030044377087");
-            ShamirSecretSharingScheme sss = new ShamirSecretSharingScheme();
-            var shares = sss.Shamir((BigInteger)secret, prime, 5, 2, false);
-            foreach (var share in shares)
-            {
-                share.X *= 2;
-                share.Y *= 2;
-            }
-
-            // ACT
-            var res = sss.deShamir(shares, prime);
-
-            // ASSERT
-            Assert.Equal(secret * 2, (double)res);
         }
 
         [Fact]
@@ -196,26 +138,6 @@ namespace ProtocolTests
 
             // ASSERT
             Assert.Equal(sum1, sum2);
-        }
-
-        [Fact]
-        public void TestShamirAddBy2()
-        {
-            // ARRANGE
-            double secret = 17;
-            var prime = BigInteger.Parse("1298074214633706835075030044377087");
-            ShamirSecretSharingScheme sss = new ShamirSecretSharingScheme();
-            var shares = sss.Shamir((BigInteger)secret, prime, 5, 2, false);
-            foreach (var share in shares)
-            {
-                share.Y += 2;
-            }
-
-            // ACT
-            var res = sss.deShamir(shares, prime);
-
-            // ASSERT
-            Assert.Equal(secret + 2, (double)res);
         }
 
         [Fact]
