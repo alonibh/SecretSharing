@@ -17,6 +17,8 @@ namespace SecretSharing
 
         public static readonly double Q = 100;
 
+        public static readonly Random random = new Random();
+
         public static int[,] ReadUserItemMatrix(string path)
         {
             List<UserRating> ratings = new List<UserRating>();
@@ -76,7 +78,7 @@ namespace SecretSharing
                 BigInteger[] share = new BigInteger[vector.Length];
                 for (int j = 0; j < vector.Length; j++)
                 {
-                    share[j] = new Random().Next(1, (int)PRIME);
+                    share[j] = random.Next(1, (int)PRIME);
                     sharesSum[j] += share[j];
                 }
                 shares.Add(share);
@@ -141,10 +143,10 @@ namespace SecretSharing
         /// <returns>Shares array for each of the mediators</returns>
         public static List<Coordinate[]> ShamirSecretSharing(BigInteger[] vector, int numOfShares)
         {
-            if (numOfShares != 3 && numOfShares != 5)
-            {
-                throw new Exception("Invalid number of shares, has to be 3 or 5");
-            }
+            //if (numOfShares != 3 && numOfShares != 5)
+            //{
+            //    throw new Exception("Invalid number of shares, has to be 3 or 5");
+            //}
 
             var shares = new List<Coordinate[]>();
             for (int i = 0; i < numOfShares; i++)
@@ -157,7 +159,7 @@ namespace SecretSharing
                 int shareCount = 0;
                 foreach (int entry in vector)
                 {
-                    BigInteger a = new Random().Next(2, int.MaxValue);
+                    BigInteger a = random.Next(2, int.MaxValue);
 
                     for (int i = 0; i < 3; i++)
                     {
@@ -180,8 +182,8 @@ namespace SecretSharing
                 int shareCount = 0;
                 foreach (BigInteger entry in vector)
                 {
-                    BigInteger a = new Random().Next(2, int.MaxValue);
-                    BigInteger b = new Random().Next(2, int.MaxValue);
+                    BigInteger a = random.Next(2, int.MaxValue);
+                    BigInteger b = random.Next(2, int.MaxValue);
 
                     for (int i = 0; i < 5; i++)
                     {
@@ -269,9 +271,10 @@ namespace SecretSharing
             List<Coordinate[]>[] clPowSharesArray = new List<Coordinate[]>[items];
             List<Coordinate[]>[] xiClSharesArray = new List<Coordinate[]>[items];
 
-            //var watch = System.Diagnostics.Stopwatch.StartNew();
-            //Parallel.For(0, items, (i) =>
-            for (int i = 0; i < items; i++)
+            int count = 0;
+
+            var watch = System.Diagnostics.Stopwatch.StartNew();
+            Parallel.For(0, items, (i) =>
             {
                 BigInteger[] cl = userItemMatrix.GetVerticalVector(i).Select(o => (BigInteger)o).ToArray();
                 var clShares = ShamirSecretSharing(cl, numOfShares);
@@ -284,21 +287,17 @@ namespace SecretSharing
                 BigInteger[] xiCl = Array.ConvertAll(cl, x => x == 0 ? (BigInteger)0 : 1);
                 var xiClShares = ShamirSecretSharing(xiCl, numOfShares);
                 xiClSharesArray[i] = xiClShares;
-                //});
-            }
-            //watch.Stop();
-            //var elapsedMs = watch.ElapsedMilliseconds;
+            });
 
-            //Console.WriteLine($"Phase 1 - done in {elapsedMs} MS");
+            watch.Stop();
+            var elapsedMs = watch.ElapsedMilliseconds;
+            Console.WriteLine($"Phase 1 - done in {elapsedMs} MS");
 
-            for (int i = 0; i < items; i++)
+            for (int i = 0; i < 5; i++)
             {
-                //watch = System.Diagnostics.Stopwatch.StartNew();
+                watch = System.Diagnostics.Stopwatch.StartNew();
 
-                var options = new ParallelOptions();
-                options.MaxDegreeOfParallelism = 60;
-                for (int j = i + 1; j < items; j++)
-                //Parallel.For(i + 1, items, options, (j) =>
+                Parallel.For(i + 1, items, (j) =>
                 {
                     double z1 = ScalarProductShares(clSharesArray[i], clSharesArray[j]);
 
@@ -315,11 +314,10 @@ namespace SecretSharing
                     //Convert to integer value
                     similarityMatrix[i, j] = (BigInteger)Math.Floor((similarityScore * Q) + 0.5);
                     similarityMatrix[j, i] = (BigInteger)Math.Floor((similarityScore * Q) + 0.5);
-                    //});
-                }
-                //watch.Stop();
-                //elapsedMs = watch.ElapsedMilliseconds;
-                //Console.WriteLine($"{i}/{items} done in {elapsedMs} MS");
+                });
+                watch.Stop();
+                elapsedMs = watch.ElapsedMilliseconds;
+                Console.WriteLine($"{i}/{items} done in {elapsedMs} MS");
             }
 
             return similarityMatrix;
@@ -638,8 +636,6 @@ namespace SecretSharing
         {
             byte[] bytes = N.ToByteArray();
             BigInteger R;
-            var random = new Random();
-
             do
             {
                 random.NextBytes(bytes);
