@@ -1,7 +1,6 @@
 using SecretSharing;
 using System;
 using System.Collections.Generic;
-using System.Numerics;
 using Xunit;
 
 namespace ProtocolTests
@@ -12,12 +11,12 @@ namespace ProtocolTests
         public void TestAONSecretSharingAndReconstruction()
         {
             // ARRANGE
-            BigInteger[] vector = new BigInteger[5] {
-                BigInteger.Parse("214748647"),
-                BigInteger.Parse("214743647"),
-                BigInteger.Parse("214783647"),
-                BigInteger.Parse("214483647"),
-                BigInteger.Parse("217483647")
+            double[] vector = new double[5] {
+                double.Parse("214748647"),
+                double.Parse("214743647"),
+                double.Parse("214783647"),
+                double.Parse("214483647"),
+                double.Parse("217483647")
             };
 
             // ACT
@@ -41,7 +40,7 @@ namespace ProtocolTests
             //ASSERT
             double Q = 100;
             var similarityScore = (2 * 5 + 3 * 4) / Math.Sqrt((4 + 9) * (25 + 16));
-            var integeredSimilarityScore = (BigInteger)Math.Floor((similarityScore * Q) + 0.5);
+            var integeredSimilarityScore = (double)Math.Floor((similarityScore * Q) + 0.5);
             Assert.Equal(integeredSimilarityScore, similarityMatrix[0, 1]);
         }
 
@@ -58,7 +57,7 @@ namespace ProtocolTests
             //ASSERT
             double Q = 100;
             var similarityScore = (2 * 5 + 3 * 4) / Math.Sqrt((4 + 9) * (25 + 16));
-            var integeredSimilarityScore = (BigInteger)Math.Floor((similarityScore * Q) + 0.5);
+            var integeredSimilarityScore = (double)Math.Floor((similarityScore * Q) + 0.5);
             Assert.Equal(integeredSimilarityScore, similarityMatrix[0, 1]);
         }
 
@@ -66,8 +65,8 @@ namespace ProtocolTests
         public void TestScalarProductBetweenShares()
         {
             // ARRANGE
-            BigInteger[] firstVector = new BigInteger[3] { 9, 1, 2 };
-            BigInteger[] secondVector = new BigInteger[3] { 3, 2, 4 };
+            double[] firstVector = new double[3] { 9, 1, 2 };
+            double[] secondVector = new double[3] { 3, 2, 4 };
             var firstShares = Protocols.ShamirSecretSharing(firstVector, 5);
             var secondShares = Protocols.ShamirSecretSharing(secondVector, 5);
 
@@ -89,7 +88,7 @@ namespace ProtocolTests
             var RhatShares = Protocols.SecretShareRHat(userItemMatrix, D);
 
             // ASSERT
-            List<BigInteger[]> Rhat_0Shares = new List<BigInteger[]>();
+            List<double[]> Rhat_0Shares = new List<double[]>();
             for (int i = 0; i < D; i++)
             {
                 Rhat_0Shares.Add(RhatShares[i][0]);
@@ -110,14 +109,14 @@ namespace ProtocolTests
             var xiRShares = Protocols.SecretShareXiR(userItemMatrix, D);
 
             // ASSERT
-            List<BigInteger[]> xiR0Shares = new List<BigInteger[]>();
+            List<double[]> xiR0Shares = new List<double[]>();
             for (int i = 0; i < D; i++)
             {
                 xiR0Shares.Add(xiRShares[i][0]);
             }
             var xiR0 = Protocols.ReconstructAllOrNothingSecret(xiR0Shares);
 
-            Assert.Equal(new BigInteger[2] { 0, 1 }, xiR0);
+            Assert.Equal(new double[2] { 0, 1 }, xiR0);
         }
 
         [Fact]
@@ -127,11 +126,11 @@ namespace ProtocolTests
             int[,] userItemMatrix = new int[2, 3] { { 2, 5, 3 }, { 3, 4, 5 } };
             int D = 5;
 
-            BigInteger[,] similarityMatrix = Protocols.CalcSimilarityMatrix(userItemMatrix, D);
+            double[,] similarityMatrix = Protocols.CalcSimilarityMatrix(userItemMatrix, D);
 
             var XiRShares = Protocols.SecretShareXiR(userItemMatrix, D);
 
-            BigInteger sum1 = 0;
+            double sum1 = 0;
             for (int i = 0; i < 5; i++)
             {
                 sum1 += XiRShares[i][0][0];
@@ -140,10 +139,10 @@ namespace ProtocolTests
 
             // ACT
 
-            List<BigInteger[]>[] ObfuscatedXiRShares = Protocols.ObfuscateShares(XiRShares);
+            List<double[]>[] ObfuscatedXiRShares = Protocols.ObfuscateShares(XiRShares);
 
 
-            BigInteger sum2 = 0;
+            double sum2 = 0;
             for (int i = 0; i < 5; i++)
             {
                 sum2 += ObfuscatedXiRShares[i][0][0];
@@ -158,13 +157,13 @@ namespace ProtocolTests
         public void TestGetMostSimilarItemsToM()
         {
             // ARRANGE
-            var similarityMatrix = new BigInteger[4, 4] { { 0, 2, 3, 5 }, { 2, 0, 4, 1 }, { 3, 4, 0, 2 }, { 5, 1, 2, 0 } };
+            var similarityMatrix = new double[4, 4] { { 0, 2, 3, 5 }, { 2, 0, 4, 1 }, { 3, 4, 0, 2 }, { 5, 1, 2, 0 } };
 
             // ACT
-            BigInteger[] items = Protocols.GetMostSimilarItemsToM(similarityMatrix, 1, 2, true);
+            double[] items = Protocols.GetMostSimilarItemsToM(similarityMatrix, 1, 2, true);
 
             // ASSERT
-            Assert.Equal(items, new BigInteger[4] { 2, 0, 4, 0 });
+            Assert.Equal(items, new double[4] { 2, 0, 4, 0 });
         }
 
         [Fact]
@@ -177,29 +176,29 @@ namespace ProtocolTests
             int D = 5;
             int q = 2;
 
-            BigInteger x_dSum = 0;
-            BigInteger y_dSum = 0;
+            double x_dSum = 0;
+            double y_dSum = 0;
 
             // ACT
-            BigInteger[,] similarityMatrix = Protocols.CalcSimilarityMatrix(userItemMatrix, D);
+            double[,] similarityMatrix = Protocols.CalcSimilarityMatrix(userItemMatrix, D);
 
             var RHatShares = Protocols.SecretShareRHat(userItemMatrix, D);
             var XiRShares = Protocols.SecretShareXiR(userItemMatrix, D);
 
-            List<BigInteger[]>[] ObfuscatedXiRShares = Protocols.ObfuscateShares(XiRShares);
+            List<double[]>[] ObfuscatedXiRShares = Protocols.ObfuscateShares(XiRShares);
 
 
             var sm = Protocols.GetMostSimilarItemsToM(similarityMatrix, m, q, true);
             foreach (var RHatShare in RHatShares)
             {
-                BigInteger[] RHat_n = RHatShare.GetHorizontalVector(n);
-                BigInteger x_d = Protocols.ScalarProductVectors(RHat_n, sm);
+                double[] RHat_n = RHatShare.GetHorizontalVector(n);
+                double x_d = Protocols.ScalarProductVectors(RHat_n, sm);
                 x_dSum += x_d;
             }
             foreach (var obfuscatedXiRShare in ObfuscatedXiRShares)
             {
-                BigInteger[] XiR_n = obfuscatedXiRShare.GetHorizontalVector(n);
-                BigInteger y_d = Protocols.ScalarProductVectors(XiR_n, sm);
+                double[] XiR_n = obfuscatedXiRShare.GetHorizontalVector(n);
+                double y_d = Protocols.ScalarProductVectors(XiR_n, sm);
                 y_dSum += y_d;
             }
 

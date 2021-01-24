@@ -1,8 +1,6 @@
-﻿using SecretSharingProtocol;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Numerics;
 
 namespace SecretSharing
 {
@@ -26,7 +24,7 @@ namespace SecretSharing
 
             int[,] trainingUserItemMatrix;
             int[,] testingUserItemMatrix;
-            BigInteger[,] similarityMatrix;
+            double[,] similarityMatrix;
 
             //Protocols.RunProtocol2RuntimeTest(trainingUserItemMatrix, D);
             //return;
@@ -35,7 +33,7 @@ namespace SecretSharing
             {
                 trainingUserItemMatrix = _2DArrayExtensions.LoadIntMatrixFromFile("trainingUserItemMatrix.txt");
                 testingUserItemMatrix = _2DArrayExtensions.LoadIntMatrixFromFile("testingUserItemMatrix.txt");
-                similarityMatrix = _2DArrayExtensions.LoadBigIntegerMatrixFromFile("similarityMatrix.txt");
+                similarityMatrix = _2DArrayExtensions.LoaddoubleMatrixFromFile("similarityMatrix.txt");
 
             }
             else if (calcAndSaveToFile)
@@ -60,13 +58,13 @@ namespace SecretSharing
 
             #region Secret sharing R_hat and xiR using AON (Protocol 3)
 
-            List<BigInteger[]>[] RHatShares;
-            List<BigInteger[]>[] XiRShares;
+            List<double[]>[] RHatShares;
+            List<double[]>[] XiRShares;
 
             if (loadFromFile)
             {
-                RHatShares = _2DArrayExtensions.LoadBigIntegerMatrixArrayFromFile("RHatShares.txt");
-                XiRShares = _2DArrayExtensions.LoadBigIntegerMatrixArrayFromFile("XiRShares.txt");
+                RHatShares = _2DArrayExtensions.LoaddoubleMatrixArrayFromFile("RHatShares.txt");
+                XiRShares = _2DArrayExtensions.LoaddoubleMatrixArrayFromFile("XiRShares.txt");
 
             }
             else if (calcAndSaveToFile)
@@ -83,7 +81,7 @@ namespace SecretSharing
 
             #region Obfuscate the shares of xiR (Protocol 4)
 
-            List<BigInteger[]>[] ObfuscatedXiRShares = Protocols.ObfuscateShares(XiRShares);
+            List<double[]>[] ObfuscatedXiRShares = Protocols.ObfuscateShares(XiRShares);
 
             #endregion
 
@@ -100,20 +98,20 @@ namespace SecretSharing
                 int n = entry.Item1;
                 int m = entry.Item2;
 
-                BigInteger x_dSum = 0;
-                BigInteger y_dSum = 0;
+                double x_dSum = 0;
+                double y_dSum = 0;
 
                 var sm = Protocols.GetMostSimilarItemsToM(similarityMatrix, m, q, true);
                 foreach (var RHatShare in RHatShares)
                 {
-                    BigInteger[] RHat_n = RHatShare.GetHorizontalVector(n);
-                    BigInteger x_d = Protocols.ScalarProductVectors(RHat_n, sm);
+                    double[] RHat_n = RHatShare.GetHorizontalVector(n);
+                    double x_d = Protocols.ScalarProductVectors(RHat_n, sm);
                     x_dSum += x_d;
                 }
                 foreach (var ObfuscatedXiRShare in ObfuscatedXiRShares)
                 {
-                    BigInteger[] XiR_n = ObfuscatedXiRShare.GetHorizontalVector(n);
-                    BigInteger y_d = Protocols.ScalarProductVectors(XiR_n, sm);
+                    double[] XiR_n = ObfuscatedXiRShare.GetHorizontalVector(n);
+                    double y_d = Protocols.ScalarProductVectors(XiR_n, sm);
                     y_dSum += y_d;
                 }
 
@@ -167,8 +165,8 @@ namespace SecretSharing
 
             int selectedUser = 7;
 
-            BigInteger[] x = new BigInteger[count];
-            BigInteger[] y = new BigInteger[count];
+            double[] x = new double[count];
+            double[] y = new double[count];
             int i = 0;
             foreach (var itemIndex in vendorItems)
             {
@@ -176,8 +174,8 @@ namespace SecretSharing
 
                 foreach (var RHatShare in RHatShares)
                 {
-                    BigInteger[] RHat_n = RHatShare.GetHorizontalVector(selectedUser);
-                    BigInteger x_d = Protocols.ScalarProductVectors(RHat_n, sm);
+                    double[] RHat_n = RHatShare.GetHorizontalVector(selectedUser);
+                    double x_d = Protocols.ScalarProductVectors(RHat_n, sm);
                     x[i] += x_d;
 
                     y[i] += RHat_n[itemIndex];
@@ -195,10 +193,10 @@ namespace SecretSharing
                     indices.Add(i);
                 }
             }
-            List<Tuple<BigInteger, int>> valueAndIndex = new List<Tuple<BigInteger, int>>();
+            List<Tuple<double, int>> valueAndIndex = new List<Tuple<double, int>>();
             foreach (var index in indices)
             {
-                valueAndIndex.Add(new Tuple<BigInteger, int>(x[index], index));
+                valueAndIndex.Add(new Tuple<double, int>(x[index], index));
             }
             Array.Sort(valueAndIndex.ToArray(), new ScoreAndIndexComparer());
             valueAndIndex = valueAndIndex.Take(h).ToList();

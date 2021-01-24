@@ -1,13 +1,11 @@
-﻿using System.Numerics;
-
-namespace SecretSharingProtocol
+﻿namespace SecretSharingProtocol
 {
     public class Coordinate
     {
-        public BigInteger X { get; set; }
-        public BigInteger Y { get; set; }
+        public double X { get; set; }
+        public double Y { get; set; }
 
-        public Coordinate(BigInteger x, BigInteger y)
+        public Coordinate(double x, double y)
         {
             X = x;
             Y = y;

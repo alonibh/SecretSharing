@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Numerics;
 
 namespace SecretSharing
 {
@@ -161,10 +160,10 @@ namespace SecretSharing
             return vector;
         }
 
-        public static BigInteger[] GetVerticalVector(this BigInteger[,] matrix, int index)
+        public static double[] GetVerticalVector(this double[,] matrix, int index)
         {
             int length = matrix.GetLength(0);
-            BigInteger[] vector = new BigInteger[length];
+            double[] vector = new double[length];
             for (int i = 0; i < length; i++)
             {
                 vector[i] = matrix[i, index];
@@ -219,11 +218,11 @@ namespace SecretSharing
             return averageRatings;
         }
 
-        public static BigInteger[,] GetAdjustedUserItemMatrix(this int[,] userItemMatrix, double Q)
+        public static double[,] GetAdjustedUserItemMatrix(this int[,] userItemMatrix, double Q)
         {
             int users = userItemMatrix.GetLength(0);
             int items = userItemMatrix.GetLength(1);
-            BigInteger[,] adjustedUserItemMatrix = new BigInteger[users, items];
+            double[,] adjustedUserItemMatrix = new double[users, items];
 
             double[] averageRatings = userItemMatrix.GetAverageRatings();
             for (int i = 0; i < users; i++)
@@ -237,7 +236,7 @@ namespace SecretSharing
                     else
                     {
                         var adjustedRating = userItemMatrix[i, j] - averageRatings[j];
-                        adjustedUserItemMatrix[i, j] = (BigInteger)Math.Floor((adjustedRating * Q) + 0.5);
+                        adjustedUserItemMatrix[i, j] = Math.Floor((adjustedRating * Q) + 0.5);
                     }
                 }
             }
@@ -245,10 +244,10 @@ namespace SecretSharing
             return adjustedUserItemMatrix;
         }
 
-        public static BigInteger[] GetHorizontalVector(this List<BigInteger[]> matrix, int n)
+        public static double[] GetHorizontalVector(this List<double[]> matrix, int n)
         {
             int length = matrix.Count;
-            BigInteger[] vector = new BigInteger[length];
+            double[] vector = new double[length];
             for (int i = 0; i < length; i++)
             {
                 vector[i] = matrix[i][n];
@@ -280,7 +279,7 @@ namespace SecretSharing
             return xiMatrix;
         }
 
-        public static void SaveToFile(this BigInteger[,] matrix, string path)
+        public static void SaveToFile(this double[,] matrix, string path)
         {
             List<string> lines = new List<string>();
             int n = matrix.GetLength(0);
@@ -295,25 +294,25 @@ namespace SecretSharing
             File.WriteAllLines(path, lines);
         }
 
-        public static BigInteger[,] LoadBigIntegerMatrixFromFile(string path)
+        public static double[,] LoaddoubleMatrixFromFile(string path)
         {
             var lines = File.ReadAllLines(path);
             int N = int.Parse(lines[lines.Length - 1].Split()[0]) + 1;
             int M = int.Parse(lines[lines.Length - 1].Split()[1]) + 1;
-            BigInteger[,] matrix = new BigInteger[N, M];
+            double[,] matrix = new double[N, M];
 
             foreach (var line in lines)
             {
                 int n = int.Parse(line.Split()[0]);
                 int m = int.Parse(line.Split()[1]);
-                BigInteger rating = BigInteger.Parse(line.Split()[2]);
+                double rating = double.Parse(line.Split()[2]);
                 matrix[n, m] = rating;
             }
 
             return matrix;
         }
 
-        public static void SaveToFile(this List<BigInteger[]>[] matrixArray, string path)
+        public static void SaveToFile(this List<double[]>[] matrixArray, string path)
         {
             List<string> lines = new List<string>();
             int length = matrixArray.Length;
@@ -332,26 +331,26 @@ namespace SecretSharing
             File.WriteAllLines(path, lines);
         }
 
-        public static List<BigInteger[]>[] LoadBigIntegerMatrixArrayFromFile(string path)
+        public static List<double[]>[] LoaddoubleMatrixArrayFromFile(string path)
         {
             var lines = File.ReadAllLines(path);
             int length = int.Parse(lines[lines.Length - 1].Split()[0]) + 1;
             int count = int.Parse(lines[lines.Length - 1].Split()[1]) + 1;
             int items = int.Parse(lines[lines.Length - 1].Split()[2]) + 1;
-            var matrixArray = new List<BigInteger[]>[length];
+            var matrixArray = new List<double[]>[length];
             foreach (var line in lines)
             {
                 var splitted = line.Split();
                 int n = int.Parse(splitted[0]);
                 int m = int.Parse(splitted[1]);
                 int item = int.Parse(splitted[2]);
-                BigInteger rating = BigInteger.Parse(splitted[3]);
+                double rating = double.Parse(splitted[3]);
                 if (matrixArray[n] == null)
                 {
-                    matrixArray[n] = new List<BigInteger[]>();
+                    matrixArray[n] = new List<double[]>();
                     for (int i = 0; i < count; i++)
                     {
-                        matrixArray[n].Add(new BigInteger[items]);
+                        matrixArray[n].Add(new double[items]);
                     }
                 }
 
@@ -394,7 +393,7 @@ namespace SecretSharing
             return matrix;
         }
 
-        public static void SaveToFile(this BigInteger[] vector, string path)
+        public static void SaveToFile(this double[] vector, string path)
         {
             List<string> lines = new List<string>();
             foreach (var entry in vector)
@@ -405,15 +404,15 @@ namespace SecretSharing
             File.WriteAllLines(path, lines);
         }
 
-        public static BigInteger[] LoadVectorFromFile(string path)
+        public static double[] LoadVectorFromFile(string path)
         {
             var lines = File.ReadAllLines(path);
 
-            BigInteger[] vector = new BigInteger[lines.Length];
+            double[] vector = new double[lines.Length];
 
             for (int i = 0; i < lines.Length; i++)
             {
-                vector[i] = BigInteger.Parse(lines[i]);
+                vector[i] = double.Parse(lines[i]);
             }
 
             return vector;
