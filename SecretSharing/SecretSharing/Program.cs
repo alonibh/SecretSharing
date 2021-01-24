@@ -54,7 +54,8 @@ namespace SecretSharing
 
                 watch.Stop();
                 var elapsedMs = watch.ElapsedMilliseconds;
-                Console.WriteLine($"ALL took {elapsedMs} MS");
+                var time = new TimeSpan(0, 0, 0, 0, (int)elapsedMs);
+                Console.WriteLine($"Creating the Similarity Matrix took {time}");
                 //double[,] similarityMatrixNoCrypto = Protocols.CalcSimilarityMatrixNoCrypto(trainingUserItemMatrix);
 
                 //similarityMatrix.SaveToFile("similarityMatrix.txt");
