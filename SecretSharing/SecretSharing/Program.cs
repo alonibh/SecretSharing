@@ -20,6 +20,9 @@ namespace SecretSharing
             bool loadFromFile = false;
             bool calcAndSaveToFile = true;
 
+            if (D != 3 && D != 5)
+                throw new Exception("Number of mediators must be 3 or 5");
+
             #region Computing the similarity matrix (Protocol 1+2)
 
             int[,] trainingUserItemMatrix;
@@ -45,8 +48,13 @@ namespace SecretSharing
 
                 //trainingUserItemMatrix.SaveToFile("trainingUserItemMatrix.txt");
                 //testingUserItemMatrix.SaveToFile("testingUserItemMatrix.txt");
+                var watch = System.Diagnostics.Stopwatch.StartNew();
 
                 similarityMatrix = Protocols.CalcSimilarityMatrix(trainingUserItemMatrix, D);
+
+                watch.Stop();
+                var elapsedMs = watch.ElapsedMilliseconds;
+                Console.WriteLine($"ALL took {elapsedMs} MS");
                 //double[,] similarityMatrixNoCrypto = Protocols.CalcSimilarityMatrixNoCrypto(trainingUserItemMatrix);
 
                 //similarityMatrix.SaveToFile("similarityMatrix.txt");
