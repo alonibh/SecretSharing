@@ -8,12 +8,12 @@ namespace SecretSharing
     {
         static void Main(string[] args)
         {
-            int[,] userItemMatrix = Protocols.ReadUserItemMatrix("ratings-distict-100K.dat");
+            int[,] userItemMatrix = Protocols.ReadUserItemMatrix("ratings-distict-1M.dat");
 
             int N = userItemMatrix.GetLength(0); // users
             int M = userItemMatrix.GetLength(1); // items
             int k = 7; // vendors
-            int D = 5; // mediators
+            int D = 3; // mediators
             int q = 10; // num of similar items
             int h = 6; // num of most recomended items to take
 
@@ -37,7 +37,6 @@ namespace SecretSharing
                 trainingUserItemMatrix = _2DArrayExtensions.LoadIntMatrixFromFile("trainingUserItemMatrix.txt");
                 testingUserItemMatrix = _2DArrayExtensions.LoadIntMatrixFromFile("testingUserItemMatrix.txt");
                 similarityMatrix = _2DArrayExtensions.LoaddoubleMatrixFromFile("similarityMatrix.txt");
-
             }
             else if (calcAndSaveToFile)
             {

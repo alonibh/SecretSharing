@@ -149,11 +149,6 @@ namespace SecretSharing
                     {
                         int x = i + 1;
                         var y = entry + ((i + 1) * a);
-                        y %= PRIME;
-                        if (y < 0)
-                        {
-                            y += PRIME;
-                        }
 
                         shares[i][shareCount] = new Coordinate(x, y);
                     }
@@ -173,11 +168,6 @@ namespace SecretSharing
                     {
                         int x = i + 1;
                         var y = (entry + ((i + 1) * a) + ((double)(Math.Pow(i + 1, 2)) * b));
-                        y %= PRIME;
-                        if (y < 0)
-                        {
-                            y += PRIME;
-                        }
 
                         shares[i][shareCount] = new Coordinate(x, y);
                     }
@@ -256,25 +246,28 @@ namespace SecretSharing
             List<Coordinate[]>[] clPowSharesArray = new List<Coordinate[]>[items];
             List<Coordinate[]>[] xiClSharesArray = new List<Coordinate[]>[items];
 
+            Console.WriteLine($"Phase 1 started");
+
             var watch = System.Diagnostics.Stopwatch.StartNew();
             Parallel.For(0, items, (i) =>
-            {
-                double[] cl = userItemMatrix.GetVerticalVector(i).Select(o => (double)o).ToArray();
-                var clShares = ShamirSecretSharing(cl, numOfShares);
-                clSharesArray[i] = clShares;
+              {
+                  double[] cl = userItemMatrix.GetVerticalVector(i).Select(o => (double)o).ToArray();
+                  var clShares = ShamirSecretSharing(cl, numOfShares);
+                  clSharesArray[i] = clShares;
 
-                double[] clPow = Array.ConvertAll(cl, x => x * x);
-                var clPowShares = ShamirSecretSharing(clPow, numOfShares);
-                clPowSharesArray[i] = clPowShares;
+                  double[] clPow = Array.ConvertAll(cl, x => x * x);
+                  var clPowShares = ShamirSecretSharing(clPow, numOfShares);
+                  clPowSharesArray[i] = clPowShares;
 
-                double[] xiCl = Array.ConvertAll(cl, x => x == 0 ? (double)0 : 1);
-                var xiClShares = ShamirSecretSharing(xiCl, numOfShares);
-                xiClSharesArray[i] = xiClShares;
-            });
+                  double[] xiCl = Array.ConvertAll(cl, x => x == 0 ? (double)0 : 1);
+                  var xiClShares = ShamirSecretSharing(xiCl, numOfShares);
+                  xiClSharesArray[i] = xiClShares;
+              });
 
             watch.Stop();
             var elapsedMs = watch.ElapsedMilliseconds;
-            Console.WriteLine($"Phase 1 - done in {elapsedMs} MS");
+            var time = new TimeSpan(0, 0, 0, 0, (int)elapsedMs);
+            Console.WriteLine($"Phase 1 - done in {time}");
 
             for (int i = 0; i < items; i++)
             {
@@ -300,7 +293,8 @@ namespace SecretSharing
                 });
                 watch.Stop();
                 elapsedMs = watch.ElapsedMilliseconds;
-                Console.WriteLine($"{i}/{items} done in {elapsedMs} MS");
+                time = new TimeSpan(0, 0, 0, 0, (int)elapsedMs);
+                Console.WriteLine($"{i}/{items} done in {time}");
             }
 
             return similarityMatrix;
