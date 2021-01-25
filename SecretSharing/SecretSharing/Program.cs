@@ -12,7 +12,7 @@ namespace SecretSharing
 
             int N = userItemMatrix.GetLength(0); // users
             int M = userItemMatrix.GetLength(1); // items
-            int k = 2; // vendors
+            int k = 1; // vendors
             int D = 3; // mediators
             int q = 10; // num of similar items
             int h = 6; // num of most recomended items to take
@@ -21,8 +21,9 @@ namespace SecretSharing
             bool calcAndSaveToFile = true;
 
             if (D != 3 && D != 5)
+            {
                 throw new Exception("Number of mediators must be 3 or 5");
-
+            }
 
             List<int[]> vendorsItemIndecis = new List<int[]>(); // The i's entry contains the indecis of all of the items offerd by vendor i
             int[] itemsVendorIndex = new int[M]; // The i's entry contains the index of the vendor that holds that item
@@ -42,7 +43,6 @@ namespace SecretSharing
                 vendorsItemIndecis.Add(Enumerable.Range(start, count).ToArray());
                 Enumerable.Repeat(vendorIndex, count).ToArray().CopyTo(itemsVendorIndex, start);
             }
-
 
             #region Computing the similarity matrix (Protocol 1+2)
 
@@ -80,8 +80,6 @@ namespace SecretSharing
 
                 //similarityMatrix.SaveToFile("similarityMatrix.txt");
             }
-
-            return;
 
             #endregion
 
