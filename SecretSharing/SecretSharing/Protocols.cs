@@ -311,14 +311,15 @@ namespace SecretSharing
                     double z3 = ScalarProductShares(xiClSharesArray[i], clPowSharesArray[j]);
 
                     double similarityScore = 0;
-                    if (z2 * z3 != 0)
+                    var mult = z2 * z3;
+                    if (mult != 0)
                     {
-                        similarityScore = z1 / (Math.Sqrt(z2 * z3));
-                    }
+                        similarityScore = z1 / (Math.Sqrt(mult));
 
-                    //Convert to integer value
-                    similarityMatrix[i, j] = Math.Floor((similarityScore * Q) + 0.5);
-                    similarityMatrix[j, i] = Math.Floor((similarityScore * Q) + 0.5);
+                        //Convert to integer value
+                        similarityMatrix[i, j] = Math.Floor((similarityScore * Q) + 0.5);
+                        similarityMatrix[j, i] = Math.Floor((similarityScore * Q) + 0.5);
+                    }
                 });
                 watch.Stop();
                 elapsedMs = watch.ElapsedMilliseconds;
