@@ -215,42 +215,42 @@ namespace SecretSharing
         /// <returns></returns>
         public static double ScalarProductShares(List<Coordinate[]> clShares, List<Coordinate[]> cmShares)
         {
-            Coordinate[][] multShares = new Coordinate[clShares.Count][];
+            BigCoordinate[][] multShares = new BigCoordinate[clShares.Count][];
 
             for (int indexCount = 0; indexCount < clShares.Count; indexCount++)
             {
-                Coordinate[] multCoordinates = new Coordinate[clShares[0].Length];
+                BigCoordinate[] multCoordinates = new BigCoordinate[clShares[0].Length];
                 for (int shareCount = 0; shareCount < clShares[0].Length; shareCount++)
                 {
                     var newX = clShares[indexCount][shareCount].X;
-                    var newY = (double)((BigInteger)clShares[indexCount][shareCount].Y * (BigInteger)cmShares[indexCount][shareCount].Y % (BigInteger)PRIME);
+                    var newY = (BigInteger)clShares[indexCount][shareCount].Y * (BigInteger)cmShares[indexCount][shareCount].Y;
 
-                    multCoordinates[shareCount] = new Coordinate(newX, newY);
+                    multCoordinates[shareCount] = new BigCoordinate(newX, newY);
                 }
                 multShares[indexCount] = multCoordinates;
             }
 
-            List<Coordinate> coordinates = new List<Coordinate>();
+            List<BigCoordinate> coordinates = new List<BigCoordinate>();
             for (int i = 0; i < clShares.Count; i++)
             {
                 double sumX = 0;
-                double sumY = 0;
+                BigInteger sumY = 0;
                 for (int j = 0; j < clShares[0].Length; j++)
                 {
                     sumX += multShares[i][j].X;
                     sumY += multShares[i][j].Y;
                 }
-                coordinates.Add(new Coordinate(sumX, sumY));
+                coordinates.Add(new BigCoordinate(sumX, sumY));
             }
 
             double secret = 0;
             if (coordinates.Count == 3)
             {
-                secret = (3 * (coordinates[0].Y - coordinates[1].Y) + coordinates[2].Y) % PRIME;
+                secret = (double)((3 * (coordinates[0].Y - coordinates[1].Y) + coordinates[2].Y) % (BigInteger)PRIME);
             }
             if (coordinates.Count == 5)
             {
-                secret = ((5 * (coordinates[0].Y - coordinates[3].Y)) - (10 * (coordinates[1].Y - coordinates[2].Y)) + coordinates[4].Y) % PRIME;
+                secret = (double)(((5 * (coordinates[0].Y - coordinates[3].Y)) - (10 * (coordinates[1].Y - coordinates[2].Y)) + coordinates[4].Y) % (BigInteger)PRIME);
             }
 
             if (secret < 0)
@@ -258,7 +258,7 @@ namespace SecretSharing
                 secret += PRIME;
             }
 
-            return (double)secret;
+            return secret;
         }
 
         /// <summary>
