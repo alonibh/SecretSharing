@@ -267,7 +267,7 @@ namespace SecretSharing
         /// <param name="userItemMatrix">The user-item matrix</param>
         /// <param name="numOfShares">D</param>
         /// <returns></returns>
-        public static double[,] CalcSimilarityMatrix(int[,] userItemMatrix, int numOfShares, int[] itemsVendorIndex)
+        public static double[,] CalcSimilarityMatrix(int[,] userItemMatrix, int numOfShares, int[] itemsVendorIndex, int k = 1)
         {
             int items = userItemMatrix.GetLength(1);
             double[,] similarityMatrix = new double[items, items];
@@ -281,6 +281,8 @@ namespace SecretSharing
             #region Phase 1 - Creating the shares
 
             Console.WriteLine($"Phase 1 started");
+
+            int count = 0;
 
             var vendorPhase1Watch = System.Diagnostics.Stopwatch.StartNew();
 
@@ -297,6 +299,9 @@ namespace SecretSharing
                 double[] xiCl = Array.ConvertAll(cl, x => x == 0 ? (double)0 : 1);
                 var xiClShares = ShamirSecretSharing(xiCl, numOfShares);
                 xiClSharesArray[i] = xiClShares;
+
+                Console.WriteLine($"{count}/{items}");
+                count++;
             });
 
             vendorPhase1Watch.Stop();
@@ -306,8 +311,9 @@ namespace SecretSharing
 
             #endregion
 
-
             #region Phase 2 - The vendors calculating the similarity matrix for items from the same vendor
+
+            Console.WriteLine($"Phase 2 started");
 
             var vendorPhase2Watch = System.Diagnostics.Stopwatch.StartNew();
 
@@ -347,6 +353,8 @@ namespace SecretSharing
 
             #region Phase 3 - The mediators calculating the similarity matrix using the shares
 
+            Console.WriteLine($"Phase 3 started");
+
             var mediatorPhase3Watch = System.Diagnostics.Stopwatch.StartNew();
 
             for (int i = 0; i < items; i++)
@@ -354,32 +362,31 @@ namespace SecretSharing
                 var similarityScoreWatch = System.Diagnostics.Stopwatch.StartNew();
 
                 Parallel.For(i + 1, items, (j) =>
-                {
+                 {
+                     // If the items belong to different vendors - do the computation using the shares
+                     if (itemsVendorIndex[i] != itemsVendorIndex[j])
+                     {
+                         double similarityScore = 0;
 
-                    // If the items belong to the different vendor - do the computation using the shares
-                    if (itemsVendorIndex[i] != itemsVendorIndex[j])
-                    {
-                        double similarityScore = 0;
+                         double z1 = ScalarProductShares(clSharesArray[i], clSharesArray[j]);
 
-                        double z1 = ScalarProductShares(clSharesArray[i], clSharesArray[j]);
+                         double z2 = ScalarProductShares(clPowSharesArray[i], xiClSharesArray[j]);
 
-                        double z2 = ScalarProductShares(clPowSharesArray[i], xiClSharesArray[j]);
+                         double z3 = ScalarProductShares(xiClSharesArray[i], clPowSharesArray[j]);
 
-                        double z3 = ScalarProductShares(xiClSharesArray[i], clPowSharesArray[j]);
-
-                        var mult = z2 * z3;
-                        if (mult != 0)
-                        {
-                            similarityScore = z1 / (Math.Sqrt(mult));
-                        }
-                        if (similarityScore != 0)
-                        {
-                            //Convert to integer value
-                            similarityMatrix[i, j] = Math.Floor((similarityScore * Q) + 0.5);
-                            similarityMatrix[j, i] = Math.Floor((similarityScore * Q) + 0.5);
-                        }
-                    }
-                });
+                         var mult = z2 * z3;
+                         if (mult != 0)
+                         {
+                             similarityScore = z1 / (Math.Sqrt(mult));
+                         }
+                         if (similarityScore != 0)
+                         {
+                             //Convert to integer value
+                             similarityMatrix[i, j] = Math.Floor((similarityScore * Q) + 0.5);
+                             similarityMatrix[j, i] = Math.Floor((similarityScore * Q) + 0.5);
+                         }
+                     }
+                 });
 
                 similarityScoreWatch.Stop();
                 var similarityScoreTime = new TimeSpan(0, 0, 0, 0, (int)similarityScoreWatch.ElapsedMilliseconds);
@@ -392,10 +399,12 @@ namespace SecretSharing
             #endregion
 
             var vendorsTime = new TimeSpan(0, 0, 0, 0, (int)totalVendorsDuration);
-            Console.WriteLine($"Total vendors time is {vendorsTime}");
+            Console.WriteLine($"Average runtime for each vendor is {vendorsTime / k}");
+            File.AppendAllLines("Times.txt", new string[1] { $"Average runtime for each vendor is {vendorsTime / k}" });
 
             var mediatorsTime = new TimeSpan(0, 0, 0, 0, (int)totalMediatorsDuration);
-            Console.WriteLine($"Total mediators time is {mediatorsTime}");
+            Console.WriteLine($"Average runtime for each mediators is {mediatorsTime}");
+            File.AppendAllLines("Times.txt", new string[1] { $"Average runtime for each mediators is {mediatorsTime}" });
 
             return similarityMatrix;
         }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 
 namespace SecretSharing
@@ -8,6 +9,29 @@ namespace SecretSharing
     {
         static void Main(string[] args)
         {
+            Console.WriteLine("k=2 D=5");
+            Test(2, 5);
+            Console.WriteLine("------------");
+
+            Console.WriteLine("k=2 D=3");
+            Test(2, 3);
+            Console.WriteLine("------------");
+
+            Console.WriteLine("k=5 D=3");
+            Test(5, 3);
+            Console.WriteLine("------------");
+
+            Console.WriteLine("k=5 D=5");
+            Test(5, 5);
+            Console.WriteLine("------------");
+
+
+            Console.WriteLine("k=1");
+            Test(1, 3);
+            Console.WriteLine("------------");
+
+            return;
+
             int[,] userItemMatrix = Protocols.ReadUserItemMatrix("ratings-distict-100K.dat");
 
             int N = userItemMatrix.GetLength(0); // users
@@ -80,6 +104,7 @@ namespace SecretSharing
 
                 //similarityMatrix.SaveToFile("similarityMatrix.txt");
             }
+            return;
 
             #endregion
 
@@ -218,6 +243,78 @@ namespace SecretSharing
             Array.Sort(valueAndIndex.ToArray(), new ScoreAndIndexComparer());
             valueAndIndex = valueAndIndex.Take(h).ToList();
             int[] mostRecommendedItems = valueAndIndex.Select(o => o.Item2 + firstItemIndex).ToArray();
+
+            #endregion
+        }
+
+        static void Test(int k, int D)
+        {
+            int[,] userItemMatrix = Protocols.ReadUserItemMatrix("ratings-distict-1M.dat");
+
+            int N = userItemMatrix.GetLength(0); // users
+            int M = userItemMatrix.GetLength(1); // items
+            int q = 10; // num of similar items
+            int h = 6; // num of most recomended items to take
+
+            bool loadFromFile = false;
+            bool calcAndSaveToFile = true;
+
+            if (D != 3 && D != 5)
+            {
+                throw new Exception("Number of mediators must be 3 or 5");
+            }
+
+            List<int[]> vendorsItemIndecis = new List<int[]>(); // The i's entry contains the indecis of all of the items offerd by vendor i
+            int[] itemsVendorIndex = new int[M]; // The i's entry contains the index of the vendor that holds that item
+            int itemsPerVendor = M / k;
+            for (int vendorIndex = 0; vendorIndex < k; vendorIndex++)
+            {
+                int start = vendorIndex * itemsPerVendor;
+                int count;
+                if (vendorIndex == k - 1)
+                {
+                    count = M - ((k - 1) * itemsPerVendor);
+                }
+                else
+                {
+                    count = itemsPerVendor;
+                }
+                vendorsItemIndecis.Add(Enumerable.Range(start, count).ToArray());
+                Enumerable.Repeat(vendorIndex, count).ToArray().CopyTo(itemsVendorIndex, start);
+            }
+
+            #region Computing the similarity matrix (Protocol 1+2)
+
+            int[,] trainingUserItemMatrix;
+            int[,] testingUserItemMatrix;
+            double[,] similarityMatrix;
+
+            //Protocols.RunProtocol2RuntimeTest(trainingUserItemMatrix, D);
+            //return;
+
+            if (loadFromFile)
+            {
+                trainingUserItemMatrix = _2DArrayExtensions.LoadIntMatrixFromFile("trainingUserItemMatrix.txt");
+                testingUserItemMatrix = _2DArrayExtensions.LoadIntMatrixFromFile("testingUserItemMatrix.txt");
+                similarityMatrix = _2DArrayExtensions.LoaddoubleMatrixFromFile("similarityMatrix.txt");
+            }
+            else if (calcAndSaveToFile)
+            {
+                var sets = userItemMatrix.SplitToTrainingAndTesting();
+
+                trainingUserItemMatrix = sets.Item1;
+                testingUserItemMatrix = sets.Item2;
+
+                //trainingUserItemMatrix.SaveToFile("trainingUserItemMatrix.txt");
+                //testingUserItemMatrix.SaveToFile("testingUserItemMatrix.txt");
+                File.AppendAllLines("Times.txt", new string[1] { $"Database - 1M, k={k} D={D}" });
+
+                similarityMatrix = Protocols.CalcSimilarityMatrix(trainingUserItemMatrix, D, itemsVendorIndex, k);
+
+                //double[,] similarityMatrixNoCrypto = Protocols.CalcSimilarityMatrixNoCrypto(trainingUserItemMatrix);
+
+                //similarityMatrix.SaveToFile("similarityMatrix.txt");
+            }
 
             #endregion
         }
