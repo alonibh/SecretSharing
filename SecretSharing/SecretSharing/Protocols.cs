@@ -144,11 +144,13 @@ namespace SecretSharing
                 foreach (int entry in vector)
                 {
                     double a = random.Next(2, int.MaxValue);
+                    double lastY = entry;
 
                     for (int i = 0; i < 3; i++)
                     {
                         int x = i + 1;
-                        var y = entry + ((i + 1) * a);
+                        var y = lastY + a;
+                        lastY = y;
 
                         shares[i][shareCount] = new Coordinate(x, y);
                     }
@@ -164,10 +166,37 @@ namespace SecretSharing
                     double a = random.Next(2, int.MaxValue);
                     double b = random.Next(2, int.MaxValue);
 
+                    double B = a + b;
+                    double B2 = b + b;
+                    double B3 = B + B2;
+                    double B5 = B3 + B2;
+                    double B7 = B5 + B2;
+                    double B9 = B7 + B2;
+                    double lastY = 0;
+
                     for (int i = 0; i < 5; i++)
                     {
                         int x = i + 1;
-                        var y = (entry + ((i + 1) * a) + ((double)(Math.Pow(i + 1, 2)) * b));
+                        double y = 0;
+                        switch (i)
+                        {
+                            case 0:
+                                y = entry + B;
+                                break;
+                            case 1:
+                                y = lastY + B3;
+                                break;
+                            case 2:
+                                y = lastY + B5;
+                                break;
+                            case 3:
+                                y = lastY + B7;
+                                break;
+                            case 4:
+                                y = lastY + B9;
+                                break;
+                        }
+                        lastY = y;
 
                         shares[i][shareCount] = new Coordinate(x, y);
                     }
@@ -250,19 +279,19 @@ namespace SecretSharing
 
             var watch = System.Diagnostics.Stopwatch.StartNew();
             Parallel.For(0, items, (i) =>
-              {
-                  double[] cl = userItemMatrix.GetVerticalVector(i).Select(o => (double)o).ToArray();
-                  var clShares = ShamirSecretSharing(cl, numOfShares);
-                  clSharesArray[i] = clShares;
+            {
+                double[] cl = userItemMatrix.GetVerticalVector(i).Select(o => (double)o).ToArray();
+                var clShares = ShamirSecretSharing(cl, numOfShares);
+                clSharesArray[i] = clShares;
 
-                  double[] clPow = Array.ConvertAll(cl, x => x * x);
-                  var clPowShares = ShamirSecretSharing(clPow, numOfShares);
-                  clPowSharesArray[i] = clPowShares;
+                double[] clPow = Array.ConvertAll(cl, x => x * x);
+                var clPowShares = ShamirSecretSharing(clPow, numOfShares);
+                clPowSharesArray[i] = clPowShares;
 
-                  double[] xiCl = Array.ConvertAll(cl, x => x == 0 ? (double)0 : 1);
-                  var xiClShares = ShamirSecretSharing(xiCl, numOfShares);
-                  xiClSharesArray[i] = xiClShares;
-              });
+                double[] xiCl = Array.ConvertAll(cl, x => x == 0 ? (double)0 : 1);
+                var xiClShares = ShamirSecretSharing(xiCl, numOfShares);
+                xiClSharesArray[i] = xiClShares;
+            });
 
             watch.Stop();
             var elapsedMs = watch.ElapsedMilliseconds;
