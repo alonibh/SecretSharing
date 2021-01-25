@@ -32,9 +32,10 @@ namespace ProtocolTests
         {
             // ARRANGE
             int[,] userItemMatrix = new int[2, 2] { { 2, 5 }, { 3, 4 } };
+            int[] itemsVendorIndex = new int[2] { 0, 1 };
 
             //ACT
-            var similarityMatrix = Protocols.CalcSimilarityMatrix(userItemMatrix, 3);
+            var similarityMatrix = Protocols.CalcSimilarityMatrix(userItemMatrix, 3, itemsVendorIndex);
             var similarityMatrixNoCrypto = Protocols.CalcSimilarityMatrixNoCrypto(userItemMatrix);
 
             //ASSERT
@@ -49,9 +50,10 @@ namespace ProtocolTests
         {
             // ARRANGE
             int[,] userItemMatrix = new int[2, 2] { { 2, 5 }, { 3, 4 } };
+            int[] itemsVendorIndex = new int[2] { 0, 1 };
 
             //ACT
-            var similarityMatrix = Protocols.CalcSimilarityMatrix(userItemMatrix, 5);
+            var similarityMatrix = Protocols.CalcSimilarityMatrix(userItemMatrix, 5, itemsVendorIndex);
             var similarityMatrixNoCrypto = Protocols.CalcSimilarityMatrixNoCrypto(userItemMatrix);
 
             //ASSERT
@@ -123,10 +125,12 @@ namespace ProtocolTests
         public void TestVectorObfuscationSum()
         {
             // ARRANGE
-            int[,] userItemMatrix = new int[2, 3] { { 2, 5, 3 }, { 3, 4, 5 } };
             int D = 5;
+            int[,] userItemMatrix = new int[2, 3] { { 2, 5, 3 }, { 3, 4, 5 } };
+            int[] itemsVendorIndex = new int[3] { 0, 1, 2 };
 
-            double[,] similarityMatrix = Protocols.CalcSimilarityMatrix(userItemMatrix, D);
+
+            double[,] similarityMatrix = Protocols.CalcSimilarityMatrix(userItemMatrix, D, itemsVendorIndex);
 
             var XiRShares = Protocols.SecretShareXiR(userItemMatrix, D);
 
@@ -170,17 +174,18 @@ namespace ProtocolTests
         public void TestRatingPrediction()
         {
             // ARRANGE
-            int[,] userItemMatrix = new int[4, 4] { { 1, 2, 0, 3 }, { 3, 4, 1, 5 }, { 2, 3, 3, 4 }, { 1, 2, 3, 2 } };
             int n = 0;
             int m = 2;
             int D = 5;
             int q = 2;
+            int[,] userItemMatrix = new int[4, 4] { { 1, 2, 0, 3 }, { 3, 4, 1, 5 }, { 2, 3, 3, 4 }, { 1, 2, 3, 2 } };
+            int[] itemsVendorIndex = new int[4] { 0, 0, 1, 1 };
 
             double x_dSum = 0;
             double y_dSum = 0;
 
             // ACT
-            double[,] similarityMatrix = Protocols.CalcSimilarityMatrix(userItemMatrix, D);
+            double[,] similarityMatrix = Protocols.CalcSimilarityMatrix(userItemMatrix, D, itemsVendorIndex);
 
             var RHatShares = Protocols.SecretShareRHat(userItemMatrix, D);
             var XiRShares = Protocols.SecretShareXiR(userItemMatrix, D);

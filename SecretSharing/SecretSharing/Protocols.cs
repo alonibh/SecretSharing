@@ -267,7 +267,7 @@ namespace SecretSharing
         /// <param name="userItemMatrix">The user-item matrix</param>
         /// <param name="numOfShares">D</param>
         /// <returns></returns>
-        public static double[,] CalcSimilarityMatrix(int[,] userItemMatrix, int numOfShares)
+        public static double[,] CalcSimilarityMatrix(int[,] userItemMatrix, int numOfShares, int[] itemsVendorIndex)
         {
             int items = userItemMatrix.GetLength(1);
             double[,] similarityMatrix = new double[items, items];
@@ -304,18 +304,29 @@ namespace SecretSharing
 
                 Parallel.For(i + 1, items, (j) =>
                 {
-                    double z1 = ScalarProductShares(clSharesArray[i], clSharesArray[j]);
-
-                    double z2 = ScalarProductShares(clPowSharesArray[i], xiClSharesArray[j]);
-
-                    double z3 = ScalarProductShares(xiClSharesArray[i], clPowSharesArray[j]);
-
                     double similarityScore = 0;
-                    var mult = z2 * z3;
-                    if (mult != 0)
-                    {
-                        similarityScore = z1 / (Math.Sqrt(mult));
 
+                    // If both items belong to the same vendor - do the computation without crypto
+                    if (itemsVendorIndex[i] == itemsVendorIndex[j])
+                    {
+                        similarityScore = CalcSimilarityScoreNoCrypto(userItemMatrix, i, j);
+                    }
+                    else
+                    {
+                        double z1 = ScalarProductShares(clSharesArray[i], clSharesArray[j]);
+
+                        double z2 = ScalarProductShares(clPowSharesArray[i], xiClSharesArray[j]);
+
+                        double z3 = ScalarProductShares(xiClSharesArray[i], clPowSharesArray[j]);
+
+                        var mult = z2 * z3;
+                        if (mult != 0)
+                        {
+                            similarityScore = z1 / (Math.Sqrt(mult));
+                        }
+                    }
+                    if (similarityScore != 0)
+                    {
                         //Convert to integer value
                         similarityMatrix[i, j] = Math.Floor((similarityScore * Q) + 0.5);
                         similarityMatrix[j, i] = Math.Floor((similarityScore * Q) + 0.5);
@@ -328,6 +339,32 @@ namespace SecretSharing
             }
 
             return similarityMatrix;
+        }
+
+        public static double CalcSimilarityScoreNoCrypto(int[,] userItemMatrix, int i, int j)
+        {
+            double[] cl = userItemMatrix.GetVerticalVector(i).Select(o => (double)o).ToArray();
+            double[] clPow = Array.ConvertAll(cl, x => x * x);
+            double[] xiCl = Array.ConvertAll(cl, x => x == 0 ? (double)0 : 1);
+
+            double[] cm = userItemMatrix.GetVerticalVector(j).Select(o => (double)o).ToArray();
+
+            double z1 = (double)ScalarProductVectors(cl, cm);
+
+            double[] xiCm = Array.ConvertAll(cm, x => x == 0 ? (double)0 : 1);
+
+            double z2 = (double)ScalarProductVectors(clPow, xiCm);
+
+            double[] cmPow = Array.ConvertAll(cm, x => x * x);
+
+            double z3 = (double)ScalarProductVectors(xiCl, cmPow);
+
+            double similarityScore = 0;
+            if (z2 * z3 != 0)
+            {
+                similarityScore = z1 / (Math.Sqrt(z2 * z3));
+            }
+            return similarityScore;
         }
 
         public static double[,] CalcSimilarityMatrixNoCrypto(int[,] userItemMatrix)

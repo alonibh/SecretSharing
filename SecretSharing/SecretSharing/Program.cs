@@ -12,8 +12,8 @@ namespace SecretSharing
 
             int N = userItemMatrix.GetLength(0); // users
             int M = userItemMatrix.GetLength(1); // items
-            int k = 7; // vendors
-            int D = 5; // mediators
+            int k = 2; // vendors
+            int D = 3; // mediators
             int q = 10; // num of similar items
             int h = 6; // num of most recomended items to take
 
@@ -22,6 +22,27 @@ namespace SecretSharing
 
             if (D != 3 && D != 5)
                 throw new Exception("Number of mediators must be 3 or 5");
+
+
+            List<int[]> vendorsItemIndecis = new List<int[]>(); // The i's entry contains the indecis of all of the items offerd by vendor i
+            int[] itemsVendorIndex = new int[M]; // The i's entry contains the index of the vendor that holds that item
+            int itemsPerVendor = M / k;
+            for (int vendorIndex = 0; vendorIndex < k; vendorIndex++)
+            {
+                int start = vendorIndex * itemsPerVendor;
+                int count;
+                if (vendorIndex == k - 1)
+                {
+                    count = M - ((k - 1) * itemsPerVendor);
+                }
+                else
+                {
+                    count = itemsPerVendor;
+                }
+                vendorsItemIndecis.Add(Enumerable.Range(start, count).ToArray());
+                Enumerable.Repeat(vendorIndex, count).ToArray().CopyTo(itemsVendorIndex, start);
+            }
+
 
             #region Computing the similarity matrix (Protocol 1+2)
 
@@ -49,7 +70,7 @@ namespace SecretSharing
                 //testingUserItemMatrix.SaveToFile("testingUserItemMatrix.txt");
                 var watch = System.Diagnostics.Stopwatch.StartNew();
 
-                similarityMatrix = Protocols.CalcSimilarityMatrix(trainingUserItemMatrix, D);
+                similarityMatrix = Protocols.CalcSimilarityMatrix(trainingUserItemMatrix, D, itemsVendorIndex);
 
                 watch.Stop();
                 var elapsedMs = watch.ElapsedMilliseconds;
@@ -156,25 +177,15 @@ namespace SecretSharing
 
             #region Predict ranking(Protocol 6)
 
-            int selectedVendor = 6; // from 0 to k-1
-            int itemsPerVendor = M / k;
-            int start = selectedVendor * itemsPerVendor;
-            int count;
-            if (selectedVendor == k - 1)
-            {
-                count = M - ((k - 1) * itemsPerVendor);
-            }
-            else
-            {
-                count = itemsPerVendor;
-            }
+            int selectedVendor = 0; // from 0 to k-1
+            int selectedUser = 0; // from 0 to N-1
 
-            int[] vendorItems = Enumerable.Range(start, count).ToArray();
+            int[] vendorItems = vendorsItemIndecis[selectedVendor];
+            int numOfItems = vendorItems.Length;
+            int firstItemIndex = vendorItems[0];
 
-            int selectedUser = 7;
-
-            double[] x = new double[count];
-            double[] y = new double[count];
+            double[] x = new double[numOfItems];
+            double[] y = new double[numOfItems];
             int i = 0;
             foreach (var itemIndex in vendorItems)
             {
@@ -194,7 +205,7 @@ namespace SecretSharing
                 i++;
             }
             List<int> indices = new List<int>();
-            for (i = 0; i < count; i++)
+            for (i = 0; i < numOfItems; i++)
             {
                 if (y[i] == 0)
                 {
@@ -208,7 +219,7 @@ namespace SecretSharing
             }
             Array.Sort(valueAndIndex.ToArray(), new ScoreAndIndexComparer());
             valueAndIndex = valueAndIndex.Take(h).ToList();
-            int[] mostRecommendedItems = valueAndIndex.Select(o => o.Item2 + start).ToArray();
+            int[] mostRecommendedItems = valueAndIndex.Select(o => o.Item2 + firstItemIndex).ToArray();
 
             #endregion
         }
