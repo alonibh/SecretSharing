@@ -7,51 +7,44 @@ namespace SecretSharing
 {
     class Program
     {
-        static void Main(string[] args)
+        static void Main()
         {
-            Console.WriteLine("k=2 D=5");
-            Test(2, 5);
-            Console.WriteLine("------------");
-
-            Console.WriteLine("k=2 D=3");
-            Test(2, 3);
-            Console.WriteLine("------------");
-
-            Console.WriteLine("k=5 D=3");
-            Test(5, 3);
-            Console.WriteLine("------------");
-
-            Console.WriteLine("k=5 D=5");
-            Test(5, 5);
-            Console.WriteLine("------------");
-
-
-            Console.WriteLine("k=1");
-            Test(1, 3);
-            Console.WriteLine("------------");
-
-            return;
-
-            int[,] userItemMatrix = Protocols.ReadUserItemMatrix("ratings-distict-100K.dat");
-
-            int N = userItemMatrix.GetLength(0); // users
-            int M = userItemMatrix.GetLength(1); // items
-            int k = 1; // vendors
-            int D = 3; // mediators
+            string dataset = "1M";
+            // k - vendors
+            // D - mediators
             int q = 10; // num of similar items
             int h = 6; // num of most recomended items to take
 
+            RunTest(dataset, k: 2, D: 5, q, h);
+            RunTest(dataset, k: 2, D: 3, q, h);
+            RunTest(dataset, k: 5, D: 5, q, h);
+            RunTest(dataset, k: 5, D: 3, q, h);
+            RunTest(dataset, k: 1, D: 3, q, h);
+        }
+        static void RunTest(string dataset, int k, int D, int q, int h)
+        {
+            int[,] userItemMatrix = Protocols.ReadUserItemMatrix($"ratings-distict-{dataset}.dat");
+
+            int N = userItemMatrix.GetLength(0); // users
+            int M = userItemMatrix.GetLength(1); // items
+
             bool loadFromFile = false;
-            bool calcAndSaveToFile = true;
+            bool calcAndSaveToFile = !loadFromFile;
 
             if (D != 3 && D != 5)
             {
                 throw new Exception("Number of mediators must be 3 or 5");
             }
 
+            string directoryName = $"k-{k}, D-{D}, Dataset-{dataset}/";
+            Directory.CreateDirectory(directoryName);
+
+            #region Spliting the items between the vendors
+
             List<int[]> vendorsItemIndecis = new List<int[]>(); // The i's entry contains the indecis of all of the items offerd by vendor i
             int[] itemsVendorIndex = new int[M]; // The i's entry contains the index of the vendor that holds that item
             int itemsPerVendor = M / k;
+
             for (int vendorIndex = 0; vendorIndex < k; vendorIndex++)
             {
                 int start = vendorIndex * itemsPerVendor;
@@ -68,20 +61,19 @@ namespace SecretSharing
                 Enumerable.Repeat(vendorIndex, count).ToArray().CopyTo(itemsVendorIndex, start);
             }
 
+            #endregion
+
             #region Computing the similarity matrix (Protocol 1+2)
 
-            int[,] trainingUserItemMatrix;
-            int[,] testingUserItemMatrix;
-            double[,] similarityMatrix;
-
-            //Protocols.RunProtocol2RuntimeTest(trainingUserItemMatrix, D);
-            //return;
+            int[,] trainingUserItemMatrix = null;
+            int[,] testingUserItemMatrix = null;
+            double[,] similarityMatrix = null;
 
             if (loadFromFile)
             {
-                trainingUserItemMatrix = _2DArrayExtensions.LoadIntMatrixFromFile("trainingUserItemMatrix.txt");
-                testingUserItemMatrix = _2DArrayExtensions.LoadIntMatrixFromFile("testingUserItemMatrix.txt");
-                similarityMatrix = _2DArrayExtensions.LoaddoubleMatrixFromFile("similarityMatrix.txt");
+                trainingUserItemMatrix = ArraysExtensions.LoadIntMatrixFromFile(directoryName + "trainingUserItemMatrix.txt");
+                testingUserItemMatrix = ArraysExtensions.LoadIntMatrixFromFile(directoryName + "testingUserItemMatrix.txt");
+                similarityMatrix = ArraysExtensions.LoaddoubleMatrixFromFile(directoryName + "similarityMatrix.txt");
             }
             else if (calcAndSaveToFile)
             {
@@ -90,50 +82,67 @@ namespace SecretSharing
                 trainingUserItemMatrix = sets.Item1;
                 testingUserItemMatrix = sets.Item2;
 
-                //trainingUserItemMatrix.SaveToFile("trainingUserItemMatrix.txt");
-                //testingUserItemMatrix.SaveToFile("testingUserItemMatrix.txt");
-                var watch = System.Diagnostics.Stopwatch.StartNew();
+                trainingUserItemMatrix.SaveToFile(directoryName + "trainingUserItemMatrix.txt");
+                testingUserItemMatrix.SaveToFile(directoryName + "testingUserItemMatrix.txt");
 
-                similarityMatrix = Protocols.CalcSimilarityMatrix(trainingUserItemMatrix, D, itemsVendorIndex);
+                File.AppendAllLines(directoryName + "Times.txt", new string[1] { $"Database - {dataset}, k={k} D={D}" });
 
-                watch.Stop();
-                var elapsedMs = watch.ElapsedMilliseconds;
-                var time = new TimeSpan(0, 0, 0, 0, (int)elapsedMs);
-                Console.WriteLine($"Creating the Similarity Matrix took {time}");
+                similarityMatrix = Protocols.CalcSimilarityMatrix(trainingUserItemMatrix, D, itemsVendorIndex, directoryName);
+
                 //double[,] similarityMatrixNoCrypto = Protocols.CalcSimilarityMatrixNoCrypto(trainingUserItemMatrix);
 
-                //similarityMatrix.SaveToFile("similarityMatrix.txt");
+                similarityMatrix.SaveToFile(directoryName + "similarityMatrix.txt");
             }
-            return;
 
             #endregion
 
             #region Secret sharing R_hat and xiR using AON (Protocol 3)
 
-            List<double[]>[] RHatShares;
-            List<double[]>[] XiRShares;
+            List<double[]>[] RHatShares = null;
+            List<double[]>[] XiRShares = null;
 
             if (loadFromFile)
             {
-                RHatShares = _2DArrayExtensions.LoaddoubleMatrixArrayFromFile("RHatShares.txt");
-                XiRShares = _2DArrayExtensions.LoaddoubleMatrixArrayFromFile("XiRShares.txt");
-
+                RHatShares = ArraysExtensions.LoadDoubleMatrixArrayFromFile(directoryName + "RHatShares.txt");
             }
             else if (calcAndSaveToFile)
             {
+                var secretSharingWatch = System.Diagnostics.Stopwatch.StartNew();
 
                 RHatShares = Protocols.SecretShareRHat(trainingUserItemMatrix, D);
-                RHatShares.SaveToFile("RHatShares.txt");
-
                 XiRShares = Protocols.SecretShareXiR(trainingUserItemMatrix, D);
-                XiRShares.SaveToFile("XiRShares.txt");
+
+                secretSharingWatch.Stop();
+                var secretSharingTime = new TimeSpan(0, 0, 0, 0, (int)secretSharingWatch.ElapsedMilliseconds);
+                Console.WriteLine($"Average time per vendor - Secret Sharing R_hat and xiR done in {(secretSharingTime / k)}");
+                File.AppendAllLines(directoryName + "Times.txt", new string[1] { $"Average time per vendor - Secret Sharing R_hat and xiR done in {(secretSharingTime / k)}" });
+
+                RHatShares.SaveToFile(directoryName + "RHatShares.txt");
             }
 
             #endregion
 
             #region Obfuscate the shares of xiR (Protocol 4)
 
-            List<double[]>[] ObfuscatedXiRShares = Protocols.ObfuscateShares(XiRShares);
+            List<double[]>[] obfuscatedXiRShares = null;
+
+            if (loadFromFile)
+            {
+                obfuscatedXiRShares = ArraysExtensions.LoadDoubleMatrixArrayFromFile(directoryName + "obfuscatedXiRShares.txt");
+            }
+            else if (calcAndSaveToFile)
+            {
+                var obfuscationWatch = System.Diagnostics.Stopwatch.StartNew();
+
+                obfuscatedXiRShares = Protocols.ObfuscateShares(XiRShares);
+
+                obfuscationWatch.Stop();
+                var obfuscationTime = new TimeSpan(0, 0, 0, 0, (int)obfuscationWatch.ElapsedMilliseconds);
+                Console.WriteLine($"Average time per mediator - Obfuscating the shares of xiR done in {obfuscationTime}");
+                File.AppendAllLines(directoryName + "Times.txt", new string[1] { $"Average time per mediator - Obfuscate the shares of xiR done in {obfuscationTime}" });
+
+                obfuscatedXiRShares.SaveToFile(directoryName + "obfuscatedXiRShares.txt");
+            }
 
             #endregion
 
@@ -145,22 +154,27 @@ namespace SecretSharing
             int entryIndex = 0;
             var averageRatings = trainingUserItemMatrix.GetAverageRatings();
 
+            var vendorWatch = new System.Diagnostics.Stopwatch();
+            var mediatorsWatch = new System.Diagnostics.Stopwatch();
+
             foreach (var entry in entriesToCompare)
             {
+                mediatorsWatch.Start();
+
                 int n = entry.Item1;
                 int m = entry.Item2;
 
                 double x_dSum = 0;
                 double y_dSum = 0;
 
-                var sm = Protocols.GetMostSimilarItemsToM(similarityMatrix, m, q, true);
+                var sm = Protocols.GetSimilarityVectorForTopSimilarItemsToM(similarityMatrix, m, q, true);
                 foreach (var RHatShare in RHatShares)
                 {
                     double[] RHat_n = RHatShare.GetHorizontalVector(n);
                     double x_d = Protocols.ScalarProductVectors(RHat_n, sm);
                     x_dSum += x_d;
                 }
-                foreach (var ObfuscatedXiRShare in ObfuscatedXiRShares)
+                foreach (var ObfuscatedXiRShare in obfuscatedXiRShares)
                 {
                     double[] XiR_n = ObfuscatedXiRShare.GetHorizontalVector(n);
                     double y_d = Protocols.ScalarProductVectors(XiR_n, sm);
@@ -171,6 +185,11 @@ namespace SecretSharing
                 y_dSum %= Protocols.PRIME;
 
                 var averageRating = averageRatings[m];
+
+                mediatorsWatch.Stop();
+
+                vendorWatch.Start();
+
                 double predictedRating = averageRating;
                 double change = 0;
                 if (y_dSum != 0)
@@ -186,19 +205,31 @@ namespace SecretSharing
                 }
 
                 predictedRating = (int)Math.Round(predictedRating, 0);
+
+                vendorWatch.Stop();
+
                 double diff = Math.Abs(userItemMatrix[n, m] - predictedRating);
 
-                Console.WriteLine(entryIndex + "/" + entriesToCompare.Count);
                 MAE += diff;
                 entryIndex++;
             }
             MAE /= entriesToCompare.Count();
             Console.WriteLine(MAE);
-            return;
+
+            var mediatorsTime = new TimeSpan(0, 0, 0, 0, (int)(mediatorsWatch.ElapsedMilliseconds / entriesToCompare.Count));
+            Console.WriteLine($"Average time per mediator - Predicting a single rating done in {mediatorsTime}");
+            File.AppendAllLines(directoryName + "Times.txt", new string[1] { $"Average time per mediator - Predicting a single rating done in {mediatorsTime}" });
+
+            var vendorTime = new TimeSpan(0, 0, 0, 0, (int)(vendorWatch.ElapsedMilliseconds / entriesToCompare.Count));
+            Console.WriteLine($"Average time for a vendor - Predicting a single rating done in {vendorTime}");
+            File.AppendAllLines(directoryName + "Times.txt", new string[1] { $"Average time for a vendor - Predicting a single rating done in {vendorTime}" });
 
             #endregion
 
-            #region Predict ranking(Protocol 6)
+            #region Predict ranking (Protocol 6)
+
+            vendorWatch = new System.Diagnostics.Stopwatch();
+            mediatorsWatch = new System.Diagnostics.Stopwatch();
 
             int selectedVendor = 0; // from 0 to k-1
             int selectedUser = 0; // from 0 to N-1
@@ -209,24 +240,36 @@ namespace SecretSharing
 
             double[] x = new double[numOfItems];
             double[] y = new double[numOfItems];
+
             int i = 0;
+
+            mediatorsWatch.Start();
+
             foreach (var itemIndex in vendorItems)
             {
-                var sm = Protocols.GetMostSimilarItemsToM(similarityMatrix, itemIndex, q, false);
+                var sm = Protocols.GetSimilarityVectorForTopSimilarItemsToM(similarityMatrix, itemIndex, q, false);
 
-                foreach (var RHatShare in RHatShares)
+                foreach (var obfuscatedXiRShare in obfuscatedXiRShares)
                 {
-                    double[] RHat_n = RHatShare.GetHorizontalVector(selectedUser);
-                    double x_d = Protocols.ScalarProductVectors(RHat_n, sm);
+                    double[] XiR_n = obfuscatedXiRShare.GetHorizontalVector(selectedUser);
+                    double x_d = Protocols.ScalarProductVectors(XiR_n, sm);
+
+                    mediatorsWatch.Stop();
+
+                    vendorWatch.Start();
+
                     x[i] += x_d;
+                    y[i] += XiR_n[itemIndex];
 
-                    y[i] += RHat_n[itemIndex];
+                    vendorWatch.Stop();
 
+                    mediatorsWatch.Start();
                 }
                 x[i] %= Protocols.PRIME;
                 y[i] %= Protocols.PRIME;
                 i++;
             }
+
             List<int> indices = new List<int>();
             for (i = 0; i < numOfItems; i++)
             {
@@ -235,86 +278,25 @@ namespace SecretSharing
                     indices.Add(i);
                 }
             }
+
             List<Tuple<double, int>> valueAndIndex = new List<Tuple<double, int>>();
             foreach (var index in indices)
             {
                 valueAndIndex.Add(new Tuple<double, int>(x[index], index));
             }
-            Array.Sort(valueAndIndex.ToArray(), new ScoreAndIndexComparer());
-            valueAndIndex = valueAndIndex.Take(h).ToList();
-            int[] mostRecommendedItems = valueAndIndex.Select(o => o.Item2 + firstItemIndex).ToArray();
 
-            #endregion
-        }
+            var valueAndIndexArray = valueAndIndex.ToArray();
+            Array.Sort(valueAndIndexArray, new ScoreAndIndexComparer());
+            int[] mostRecommendedItems = valueAndIndexArray.Take(h).Select(o => o.Item2 + firstItemIndex).ToArray();
 
-        static void Test(int k, int D)
-        {
-            int[,] userItemMatrix = Protocols.ReadUserItemMatrix("ratings-distict-1M.dat");
+            mediatorsWatch.Stop();
+            var mediatorsTimePredicrRanking = new TimeSpan(0, 0, 0, 0, (int)mediatorsWatch.ElapsedMilliseconds);
+            Console.WriteLine($"Average time per mediator - Predict ranking done in {mediatorsTime}");
+            File.AppendAllLines(directoryName + "Times.txt", new string[1] { $"Average time per mediator - Predict ranking done in {mediatorsTime}" });
 
-            int N = userItemMatrix.GetLength(0); // users
-            int M = userItemMatrix.GetLength(1); // items
-            int q = 10; // num of similar items
-            int h = 6; // num of most recomended items to take
-
-            bool loadFromFile = false;
-            bool calcAndSaveToFile = true;
-
-            if (D != 3 && D != 5)
-            {
-                throw new Exception("Number of mediators must be 3 or 5");
-            }
-
-            List<int[]> vendorsItemIndecis = new List<int[]>(); // The i's entry contains the indecis of all of the items offerd by vendor i
-            int[] itemsVendorIndex = new int[M]; // The i's entry contains the index of the vendor that holds that item
-            int itemsPerVendor = M / k;
-            for (int vendorIndex = 0; vendorIndex < k; vendorIndex++)
-            {
-                int start = vendorIndex * itemsPerVendor;
-                int count;
-                if (vendorIndex == k - 1)
-                {
-                    count = M - ((k - 1) * itemsPerVendor);
-                }
-                else
-                {
-                    count = itemsPerVendor;
-                }
-                vendorsItemIndecis.Add(Enumerable.Range(start, count).ToArray());
-                Enumerable.Repeat(vendorIndex, count).ToArray().CopyTo(itemsVendorIndex, start);
-            }
-
-            #region Computing the similarity matrix (Protocol 1+2)
-
-            int[,] trainingUserItemMatrix;
-            int[,] testingUserItemMatrix;
-            double[,] similarityMatrix;
-
-            //Protocols.RunProtocol2RuntimeTest(trainingUserItemMatrix, D);
-            //return;
-
-            if (loadFromFile)
-            {
-                trainingUserItemMatrix = _2DArrayExtensions.LoadIntMatrixFromFile("trainingUserItemMatrix.txt");
-                testingUserItemMatrix = _2DArrayExtensions.LoadIntMatrixFromFile("testingUserItemMatrix.txt");
-                similarityMatrix = _2DArrayExtensions.LoaddoubleMatrixFromFile("similarityMatrix.txt");
-            }
-            else if (calcAndSaveToFile)
-            {
-                var sets = userItemMatrix.SplitToTrainingAndTesting();
-
-                trainingUserItemMatrix = sets.Item1;
-                testingUserItemMatrix = sets.Item2;
-
-                //trainingUserItemMatrix.SaveToFile("trainingUserItemMatrix.txt");
-                //testingUserItemMatrix.SaveToFile("testingUserItemMatrix.txt");
-                File.AppendAllLines("Times.txt", new string[1] { $"Database - 1M, k={k} D={D}" });
-
-                similarityMatrix = Protocols.CalcSimilarityMatrix(trainingUserItemMatrix, D, itemsVendorIndex, k);
-
-                //double[,] similarityMatrixNoCrypto = Protocols.CalcSimilarityMatrixNoCrypto(trainingUserItemMatrix);
-
-                //similarityMatrix.SaveToFile("similarityMatrix.txt");
-            }
+            var vendorTimePredictRanking = new TimeSpan(0, 0, 0, 0, (int)vendorWatch.ElapsedMilliseconds);
+            Console.WriteLine($"Average time for a vendor - Predict ranking done in {vendorTime}");
+            File.AppendAllLines(directoryName + "Times.txt", new string[1] { $"Average time for a vendor - Predict ranking done in {vendorTime}" });
 
             #endregion
         }

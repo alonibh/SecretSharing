@@ -4,7 +4,7 @@ using System.IO;
 
 namespace SecretSharing
 {
-    public static class _2DArrayExtensions
+    public static class ArraysExtensions
     {
         public static int[,] CreateRandomUserItemMatrix(int N, int M, int numR, int scaleStart, int scaleEnd, int scaleInterval)
         {
@@ -331,7 +331,7 @@ namespace SecretSharing
             File.WriteAllLines(path, lines);
         }
 
-        public static List<double[]>[] LoaddoubleMatrixArrayFromFile(string path)
+        public static List<double[]>[] LoadDoubleMatrixArrayFromFile(string path)
         {
             var lines = File.ReadAllLines(path);
             int length = int.Parse(lines[lines.Length - 1].Split()[0]) + 1;

@@ -1,6 +1,4 @@
 ﻿using LumenWorks.Framework.IO.Csv;
-using MathNet.Numerics.Distributions;
-using SecretSharingProtocol;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -130,12 +128,12 @@ namespace SecretSharing
         /// <param name="numOfSharesToMake"></param>
         /// <param name="numOfSharesForRecovery"></param>
         /// <returns>Shares array for each of the mediators</returns>
-        public static List<Coordinate[]> ShamirSecretSharing(double[] vector, int numOfShares)
+        public static List<double[]> ShamirSecretSharing(double[] vector, int numOfShares)
         {
-            var shares = new List<Coordinate[]>();
+            var shares = new List<double[]>();
             for (int i = 0; i < numOfShares; i++)
             {
-                shares.Add(new Coordinate[vector.Length]);
+                shares.Add(new double[vector.Length]);
             }
 
             if (numOfShares == 3)
@@ -152,7 +150,7 @@ namespace SecretSharing
                         var y = lastY + a;
                         lastY = y;
 
-                        shares[i][shareCount] = new Coordinate(x, y);
+                        shares[i][shareCount] = y;
                     }
                     shareCount++;
                 }
@@ -198,7 +196,7 @@ namespace SecretSharing
                         }
                         lastY = y;
 
-                        shares[i][shareCount] = new Coordinate(x, y);
+                        shares[i][shareCount] = y;
                     }
                     shareCount++;
                 }
@@ -213,44 +211,41 @@ namespace SecretSharing
         /// <param name="clShares"></param>
         /// <param name="cmShares"></param>
         /// <returns></returns>
-        public static double ScalarProductShares(List<Coordinate[]> clShares, List<Coordinate[]> cmShares)
+        public static double ScalarProductShares(List<double[]> clShares, List<double[]> cmShares)
         {
-            BigCoordinate[][] multShares = new BigCoordinate[clShares.Count][];
+            BigInteger[][] multShares = new BigInteger[clShares.Count][];
 
             for (int indexCount = 0; indexCount < clShares.Count; indexCount++)
             {
-                BigCoordinate[] multCoordinates = new BigCoordinate[clShares[0].Length];
+                BigInteger[] multCoordinates = new BigInteger[clShares[0].Length];
                 for (int shareCount = 0; shareCount < clShares[0].Length; shareCount++)
                 {
-                    var newX = clShares[indexCount][shareCount].X;
-                    var newY = (BigInteger)clShares[indexCount][shareCount].Y * (BigInteger)cmShares[indexCount][shareCount].Y;
+                    var newY = (BigInteger)clShares[indexCount][shareCount] * (BigInteger)cmShares[indexCount][shareCount];
 
-                    multCoordinates[shareCount] = new BigCoordinate(newX, newY);
+                    multCoordinates[shareCount] = newY;
                 }
                 multShares[indexCount] = multCoordinates;
             }
 
-            List<BigCoordinate> coordinates = new List<BigCoordinate>();
+            List<BigInteger> coordinates = new List<BigInteger>();
             for (int i = 0; i < clShares.Count; i++)
             {
-                double sumX = 0;
                 BigInteger sumY = 0;
                 for (int j = 0; j < clShares[0].Length; j++)
                 {
-                    sumX += multShares[i][j].X;
-                    sumY += multShares[i][j].Y;
+                    sumY += multShares[i][j];
                 }
-                coordinates.Add(new BigCoordinate(sumX, sumY));
+                coordinates.Add(sumY);
             }
 
             double secret = 0;
             if (coordinates.Count == 3)
             {
-                secret = (double)((3 * (coordinates[0].Y - coordinates[1].Y) + coordinates[2].Y) % (BigInteger)PRIME);
+                secret = (double)((3 * (coordinates[0] - coordinates[1]) + coordinates[2]) % (BigInteger)PRIME);
             }
             if (coordinates.Count == 5)
             {
-                secret = (double)(((5 * (coordinates[0].Y - coordinates[3].Y)) - (10 * (coordinates[1].Y - coordinates[2].Y)) + coordinates[4].Y) % (BigInteger)PRIME);
+                secret = (double)(((5 * (coordinates[0] - coordinates[3])) - (10 * (coordinates[1] - coordinates[2])) + coordinates[4]) % (BigInteger)PRIME);
             }
 
             if (secret < 0)
@@ -267,55 +262,23 @@ namespace SecretSharing
         /// <param name="userItemMatrix">The user-item matrix</param>
         /// <param name="numOfShares">D</param>
         /// <returns></returns>
-        public static double[,] CalcSimilarityMatrix(int[,] userItemMatrix, int numOfShares, int[] itemsVendorIndex, int k = 1)
+        public static double[,] CalcSimilarityMatrix(int[,] userItemMatrix, int numOfShares, int[] itemsVendorIndex, string directoryName="")
         {
+            int k = itemsVendorIndex.Last()+1;
             int items = userItemMatrix.GetLength(1);
             double[,] similarityMatrix = new double[items, items];
-            List<Coordinate[]>[] clSharesArray = new List<Coordinate[]>[items];
-            List<Coordinate[]>[] clPowSharesArray = new List<Coordinate[]>[items];
-            List<Coordinate[]>[] xiClSharesArray = new List<Coordinate[]>[items];
+            List<double[]>[] clSharesArray = new List<double[]>[items];
+            List<double[]>[] clPowSharesArray = new List<double[]>[items];
+            List<double[]>[] xiClSharesArray = new List<double[]>[items];
 
             long totalVendorsDuration = 0;
             long totalMediatorsDuration = 0;
 
-            #region Phase 1 - Creating the shares
+            #region Phase 1 - The vendors calculating the similarity matrix for items from the same vendor
 
             Console.WriteLine($"Phase 1 started");
 
-            int count = 0;
-
             var vendorPhase1Watch = System.Diagnostics.Stopwatch.StartNew();
-
-            Parallel.For(0, items, (i) =>
-            {
-                double[] cl = userItemMatrix.GetVerticalVector(i).Select(o => (double)o).ToArray();
-                var clShares = ShamirSecretSharing(cl, numOfShares);
-                clSharesArray[i] = clShares;
-
-                double[] clPow = Array.ConvertAll(cl, x => x * x);
-                var clPowShares = ShamirSecretSharing(clPow, numOfShares);
-                clPowSharesArray[i] = clPowShares;
-
-                double[] xiCl = Array.ConvertAll(cl, x => x == 0 ? (double)0 : 1);
-                var xiClShares = ShamirSecretSharing(xiCl, numOfShares);
-                xiClSharesArray[i] = xiClShares;
-
-                Console.WriteLine($"{count}/{items}");
-                count++;
-            });
-
-            vendorPhase1Watch.Stop();
-            var phase1Time = new TimeSpan(0, 0, 0, 0, (int)vendorPhase1Watch.ElapsedMilliseconds);
-            Console.WriteLine($"Phase 1 - done in {phase1Time}");
-            totalVendorsDuration += vendorPhase1Watch.ElapsedMilliseconds;
-
-            #endregion
-
-            #region Phase 2 - The vendors calculating the similarity matrix for items from the same vendor
-
-            Console.WriteLine($"Phase 2 started");
-
-            var vendorPhase2Watch = System.Diagnostics.Stopwatch.StartNew();
 
             for (int i = 0; i < items; i++)
             {
@@ -343,10 +306,43 @@ namespace SecretSharing
 
                 similarityScoreWatch.Stop();
                 var similarityScoreTime = new TimeSpan(0, 0, 0, 0, (int)similarityScoreWatch.ElapsedMilliseconds);
-                Console.WriteLine($"{i}/{items} done in {similarityScoreTime}");
+                Console.WriteLine($"{i}/{items} done in {similarityScoreTime:hh\\:mm\\:ss}");
             }
 
+            vendorPhase1Watch.Stop();
+            totalVendorsDuration += vendorPhase1Watch.ElapsedMilliseconds;
+
+            #endregion
+
+            #region Phase 2 - Creating the shares
+
+            Console.WriteLine($"Phase 2 started");
+
+            int count = 0;
+
+            var vendorPhase2Watch = System.Diagnostics.Stopwatch.StartNew();
+
+            Parallel.For(0, items, (i) =>
+            {
+                double[] cl = userItemMatrix.GetVerticalVector(i).Select(o => (double)o).ToArray();
+                var clShares = ShamirSecretSharing(cl, numOfShares);
+                clSharesArray[i] = clShares;
+
+                double[] clPow = Array.ConvertAll(cl, x => x * x);
+                var clPowShares = ShamirSecretSharing(clPow, numOfShares);
+                clPowSharesArray[i] = clPowShares;
+
+                double[] xiCl = Array.ConvertAll(cl, x => x == 0 ? (double)0 : 1);
+                var xiClShares = ShamirSecretSharing(xiCl, numOfShares);
+                xiClSharesArray[i] = xiClShares;
+
+                Console.WriteLine($"{count}/{items}");
+                count++;
+            });
+
             vendorPhase2Watch.Stop();
+            var phase2Time = new TimeSpan(0, 0, 0, 0, (int)vendorPhase2Watch.ElapsedMilliseconds);
+            Console.WriteLine($"Phase 2 - done in {phase2Time:hh\\:mm\\:ss}");
             totalVendorsDuration += vendorPhase2Watch.ElapsedMilliseconds;
 
             #endregion
@@ -390,7 +386,7 @@ namespace SecretSharing
 
                 similarityScoreWatch.Stop();
                 var similarityScoreTime = new TimeSpan(0, 0, 0, 0, (int)similarityScoreWatch.ElapsedMilliseconds);
-                Console.WriteLine($"{i}/{items} done in {similarityScoreTime}");
+                Console.WriteLine($"{i}/{items} done in {similarityScoreTime:hh\\:mm\\:ss}");
             }
 
             mediatorPhase3Watch.Stop();
@@ -399,12 +395,12 @@ namespace SecretSharing
             #endregion
 
             var vendorsTime = new TimeSpan(0, 0, 0, 0, (int)totalVendorsDuration);
-            Console.WriteLine($"Average runtime for each vendor is {vendorsTime / k}");
-            File.AppendAllLines("Times.txt", new string[1] { $"Average runtime for each vendor is {vendorsTime / k}" });
+            Console.WriteLine($"Average runtime for each vendor in the offline stage is {(vendorsTime / k):hh\\:mm\\:ss}");
+            File.AppendAllLines(directoryName + "Times.txt", new string[1] { $"Average runtime for each vendor is {(vendorsTime / k):hh\\:mm\\:ss}" });
 
             var mediatorsTime = new TimeSpan(0, 0, 0, 0, (int)totalMediatorsDuration);
             Console.WriteLine($"Average runtime for each mediators is {mediatorsTime}");
-            File.AppendAllLines("Times.txt", new string[1] { $"Average runtime for each mediators is {mediatorsTime}" });
+            File.AppendAllLines(directoryName + "Times.txt", new string[1] { $"Average runtime for each mediators in the offline stage is {mediatorsTime:hh\\:mm\\:ss}" });
 
             return similarityMatrix;
         }
@@ -514,7 +510,6 @@ namespace SecretSharing
             double[] secret = new double[shares[0].Length];
             double[] secretAsDouble = new double[shares[0].Length];
 
-            double[] secretWithFractions = new double[shares[0].Length];
             for (int i = 0; i < shares[0].Length; i++)
             {
                 for (int j = 0; j < shares.Count; j++)
@@ -609,14 +604,16 @@ namespace SecretSharing
         /// <param name="m"></param>
         /// <param name="q"></param>
         /// <returns></returns>
-        public static double[] GetMostSimilarItemsToM(double[,] similarityMatrix, int m, int q, bool isPositivesOnly)
+        public static double[] GetSimilarityVectorForTopSimilarItemsToM(double[,] similarityMatrix, int m, int q, bool isPositivesOnly)
         {
             int vectorLength = similarityMatrix.GetLength(0);
             Tuple<double, int>[] similarityScoreAndIndex = new Tuple<double, int>[vectorLength];
+
             for (int i = 0; i < vectorLength; i++)
             {
                 similarityScoreAndIndex[i] = new Tuple<double, int>(similarityMatrix[m, i], i);
             }
+
             Array.Sort(similarityScoreAndIndex, new ScoreAndIndexComparer());
             similarityScoreAndIndex = similarityScoreAndIndex.Take(q).ToArray();
             double[] sm = new double[vectorLength];
@@ -644,7 +641,7 @@ namespace SecretSharing
             var averageRating = userItemMatrix.GetAverageRatings()[m];
 
             double[,] similarityMatrixNoCrypto = Protocols.CalcSimilarityMatrixNoCrypto(userItemMatrix);
-            var smNoCrypto = Protocols.GetMostSimilarItemsToM(similarityMatrixNoCrypto, m, q, true);
+            var smNoCrypto = Protocols.GetSimilarityVectorForTopSimilarItemsToM(similarityMatrixNoCrypto, m, q, true);
 
             double[] RHatn = new double[userItemMatrix.GetLength(1)];
             for (int i = 0; i < userItemMatrix.GetLength(1); i++)
@@ -662,56 +659,6 @@ namespace SecretSharing
             var change = (double)mult1 / (double)mult2;
             int predictedRating = (int)Math.Round(averageRating + change, 0);
             return predictedRating;
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="numOfItems"></param>
-        /// <param name="numOfVendors"></param>
-        /// <returns>A tuple of number of items and starting index</returns>
-        public static (int, int)[] CreateRandomSplits(int numOfItems, int numOfVendors)
-        {
-            double mean = 0;
-            double stdDev = 1;
-
-            Normal normalDist = new Normal(mean, stdDev);
-            List<double> x_k = new List<double>(); // Random Gaussian values
-            for (int i = 0; i < numOfVendors; i++)
-            {
-                var sample = normalDist.Sample();
-                x_k.Add(sample);
-            }
-
-            List<double> y_k = new List<double>();
-            for (int i = 0; i < numOfVendors; i++)
-            {
-                y_k.Add((x_k[i] * numOfItems) / (10 * numOfVendors));
-            }
-
-            double a = y_k.Sum() / numOfVendors;
-
-            for (int i = 0; i < numOfVendors; i++)
-            {
-                y_k[i] -= a;
-            }
-
-            List<double> m_k = new List<double>();
-            for (int i = 0; i < numOfVendors - 1; i++)
-            {
-                m_k.Add(Math.Floor((numOfItems / numOfVendors) + y_k[i] + 0.5));
-            }
-            double lastSum = numOfItems - m_k.Sum();
-            m_k.Add(lastSum);
-
-            for (int i = 0; i < numOfVendors; i++)
-            {
-                File.AppendAllText("stats.txt", m_k[i].ToString() + "\n");
-                Console.WriteLine(m_k[i]);
-            }
-            File.AppendAllText("stats.txt", "\n");
-            Console.WriteLine("---------------------------------------------");
-            return null;
         }
     }
 
