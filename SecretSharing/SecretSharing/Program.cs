@@ -23,6 +23,8 @@ namespace SecretSharing
         }
         static void RunTest(string dataset, int k, int D, int q, int h)
         {
+            #region Settings
+
             int[,] userItemMatrix = Protocols.ReadUserItemMatrix($"ratings-distict-{dataset}.dat");
 
             int N = userItemMatrix.GetLength(0); // users
@@ -38,6 +40,8 @@ namespace SecretSharing
 
             string directoryName = $"k-{k}, D-{D}, Dataset-{dataset}/";
             Directory.CreateDirectory(directoryName);
+
+            #endregion
 
             #region Spliting the items between the vendors
 
@@ -291,12 +295,12 @@ namespace SecretSharing
 
             mediatorsWatch.Stop();
             var mediatorsTimePredicrRanking = new TimeSpan(0, 0, 0, 0, (int)mediatorsWatch.ElapsedMilliseconds);
-            Console.WriteLine($"Average time per mediator - Predict ranking done in {mediatorsTime}");
-            File.AppendAllLines(directoryName + "Times.txt", new string[1] { $"Average time per mediator - Predict ranking done in {mediatorsTime}" });
+            Console.WriteLine($"Average time per mediator - Predict ranking done in {mediatorsTimePredicrRanking}");
+            File.AppendAllLines(directoryName + "Times.txt", new string[1] { $"Average time per mediator - Predict ranking done in {mediatorsTimePredicrRanking}" });
 
             var vendorTimePredictRanking = new TimeSpan(0, 0, 0, 0, (int)vendorWatch.ElapsedMilliseconds);
-            Console.WriteLine($"Average time for a vendor - Predict ranking done in {vendorTime}");
-            File.AppendAllLines(directoryName + "Times.txt", new string[1] { $"Average time for a vendor - Predict ranking done in {vendorTime}" });
+            Console.WriteLine($"Average time for a vendor - Predict ranking done in {vendorTimePredictRanking}");
+            File.AppendAllLines(directoryName + "Times.txt", new string[1] { $"Average time for a vendor - Predict ranking done in {vendorTimePredictRanking}" });
 
             #endregion
         }
