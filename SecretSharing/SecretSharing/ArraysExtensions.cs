@@ -160,6 +160,15 @@ namespace SecretSharing
             return vector;
         }
 
+        public static int[] SetVerticalVector(this int[,] matrix, int[] vector, int index)
+        {
+            int length = matrix.GetLength(0);
+            for (int i = 0; i < length; i++)
+            {
+                matrix[i, index] = vector[i];
+            }
+            return vector;
+        }
         public static double[] GetVerticalVector(this double[,] matrix, int index)
         {
             int length = matrix.GetLength(0);
@@ -294,7 +303,7 @@ namespace SecretSharing
             File.WriteAllLines(path, lines);
         }
 
-        public static double[,] LoaddoubleMatrixFromFile(string path)
+        public static double[,] LoadDoubleMatrixFromFile(string path)
         {
             var lines = File.ReadAllLines(path);
             int N = int.Parse(lines[lines.Length - 1].Split()[0]) + 1;
@@ -456,5 +465,48 @@ namespace SecretSharing
             int average = sum / (n * m);
             return average;
         }
+
+        public static int[,] GetVerticalSubMatrix(this int[,] matrix, int[] indecis)
+        {
+            int[,] subMatrix = new int[matrix.GetLength(0), indecis.Length];
+            int start = 0;
+            foreach (var index in indecis)
+            {
+                var vector = matrix.GetVerticalVector(index);
+                subMatrix.SetVerticalVector(vector, start);
+                start++;
+            }
+            return subMatrix;
+        }
+
+        public static int[,] PlaceFakeCells(this int[,] matrix, int numOfCellsToPlaceFakeRating, int fakeRating)
+        {
+            var fakeMatrix = matrix.Clone() as int[,];
+            Random random = new Random();
+            while (numOfCellsToPlaceFakeRating > 0)
+            {
+                int i = random.Next(matrix.GetLength(0));
+                int j = random.Next(matrix.GetLength(1));
+                if (matrix[i, j] == 0)
+                {
+                    fakeMatrix[i, j] = fakeRating;
+                    numOfCellsToPlaceFakeRating--;
+                }
+            }
+
+            return fakeMatrix;
+        }
+
+        public static void CopySubMatrix(this int[,] matrix, int[,] subMatrix, int verticalIndexStart)
+        {
+            for (int i = 0; i < subMatrix.GetLength(0); i++)
+            {
+                for (int j = 0; j < subMatrix.GetLength(1); j++)
+                {
+                    matrix[i, j + verticalIndexStart] = subMatrix[i, j];
+                }
+            }
+        }
+
     }
 }

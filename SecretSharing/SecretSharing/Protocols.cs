@@ -206,6 +206,56 @@ namespace SecretSharing
         }
 
         /// <summary>
+        /// Place the vendor average rating instead of some of the zero cells
+        /// </summary>
+        /// <param name="trainingUserItemMatrix"></param>
+        /// <param name="vendorsItemsIndecis"></param>
+        /// <param name="percentOfFakeCells"></param>
+        /// <returns></returns>
+        public static int[,] GetYPUserItemMatrix(int[,] trainingUserItemMatrix, List<int[]> vendorsItemsIndecis, int percentOfFakeCells)
+        {
+            int N = trainingUserItemMatrix.GetLength(0); // users
+            int M = trainingUserItemMatrix.GetLength(1); // items
+
+            int[,] YPPredictedRatings = new int[N, M];
+
+            foreach (var vendorItemsIndecis in vendorsItemsIndecis)
+            {
+                int[,] vendorUserItemMatrix = trainingUserItemMatrix.GetVerticalSubMatrix(vendorItemsIndecis);
+                double ratingsSum = 0;
+                double ratingsCount = 0;
+                double emeptyCells = 0;
+                int users = vendorUserItemMatrix.GetLength(0);
+                int items = vendorUserItemMatrix.GetLength(1);
+
+                for (int i = 0; i < users; i++)
+                {
+                    for (int j = 0; j < items; j++)
+                    {
+                        int rating = vendorUserItemMatrix[i, j];
+                        if (rating != 0)
+                        {
+                            ratingsSum += rating;
+                            ratingsCount++;
+                        }
+                        else
+                        {
+                            emeptyCells++;
+                        }
+                    }
+                }
+
+
+                int averageRating = (int)(ratingsSum / ratingsCount);
+                int numOfCellsToPlaceFakeRating = (int)((emeptyCells / 100) * percentOfFakeCells);
+                var vendorMatrixWithFakeCells = vendorUserItemMatrix.PlaceFakeCells(numOfCellsToPlaceFakeRating, averageRating);
+
+                YPPredictedRatings.CopySubMatrix(vendorMatrixWithFakeCells, vendorItemsIndecis[0]);
+            }
+            return YPPredictedRatings;
+        }
+
+        /// <summary>
         /// Protocol 2 - Computing the scalar product between two vectors that are shared between D mediators
         /// </summary>
         /// <param name="clShares"></param>
@@ -262,9 +312,9 @@ namespace SecretSharing
         /// <param name="userItemMatrix">The user-item matrix</param>
         /// <param name="numOfShares">D</param>
         /// <returns></returns>
-        public static double[,] CalcSimilarityMatrix(int[,] userItemMatrix, int numOfShares, int[] itemsVendorIndex, string directoryName="")
+        public static double[,] CalcSimilarityMatrix(int[,] userItemMatrix, int numOfShares, int[] itemsVendorIndex, string directoryName = "")
         {
-            int k = itemsVendorIndex.Last()+1;
+            int k = itemsVendorIndex.Last() + 1;
             int items = userItemMatrix.GetLength(1);
             double[,] similarityMatrix = new double[items, items];
             List<double[]>[] clSharesArray = new List<double[]>[items];
@@ -640,8 +690,8 @@ namespace SecretSharing
         {
             var averageRating = userItemMatrix.GetAverageRatings()[m];
 
-            double[,] similarityMatrixNoCrypto = Protocols.CalcSimilarityMatrixNoCrypto(userItemMatrix);
-            var smNoCrypto = Protocols.GetSimilarityVectorForTopSimilarItemsToM(similarityMatrixNoCrypto, m, q, true);
+            double[,] similarityMatrixNoCrypto = CalcSimilarityMatrixNoCrypto(userItemMatrix);
+            var smNoCrypto = GetSimilarityVectorForTopSimilarItemsToM(similarityMatrixNoCrypto, m, q, true);
 
             double[] RHatn = new double[userItemMatrix.GetLength(1)];
             for (int i = 0; i < userItemMatrix.GetLength(1); i++)
@@ -651,10 +701,10 @@ namespace SecretSharing
                 RHatn[i] = (userItemMatrix[n, i] - averageRatingNoCrypto) * xiR;
             }
 
-            var mult1 = Protocols.ScalarProductVectors(smNoCrypto, RHatn);
+            var mult1 = ScalarProductVectors(smNoCrypto, RHatn);
             var xiRn = userItemMatrix.GetXi().GetHorizontalVector(n).Select(o => (double)o).ToArray();
 
-            var mult2 = Protocols.ScalarProductVectors(smNoCrypto, xiRn);
+            var mult2 = ScalarProductVectors(smNoCrypto, xiRn);
 
             var change = (double)mult1 / (double)mult2;
             int predictedRating = (int)Math.Round(averageRating + change, 0);

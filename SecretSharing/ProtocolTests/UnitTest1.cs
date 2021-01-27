@@ -326,5 +326,20 @@ namespace ProtocolTests
             // ASSERT
             Assert.Equal(expectedMostRecommendedItems, mostRecommendedItems);
         }
+
+        [Fact]
+        public void TestYPRatingPredictionMatrix()
+        {
+
+            // ARRANGE
+            int[,] matrix = new int[2, 5] { { 1, 0, 2, 0, 3 }, { 0, 3, 2, 0, 3 } };
+            int[,] expectedMatrix = new int[2, 5] { { 1, 2, 2, 3, 3 }, { 2, 3, 2, 3, 3 } };
+            // ACT
+            var YP = Protocols.GetYPUserItemMatrix(matrix, new List<int[]> { new int[3] { 0, 1, 2 }, new int[2] { 3, 4 } }, 100);
+
+            // ASSERT
+            Assert.Equal(expectedMatrix, YP);
+
+        }
     }
 }

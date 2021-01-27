@@ -15,13 +15,13 @@ namespace SecretSharing
             int q = 10; // num of similar items
             int h = 6; // num of most recomended items to take
 
-            RunTest(dataset, k: 2, D: 5, q, h);
-            RunTest(dataset, k: 2, D: 3, q, h);
-            RunTest(dataset, k: 5, D: 5, q, h);
-            RunTest(dataset, k: 5, D: 3, q, h);
-            RunTest(dataset, k: 1, D: 3, q, h);
+            RunTest(dataset, k: 2, D: 5, q, h, percentOfFakeCells: 5);
+            RunTest(dataset, k: 2, D: 3, q, h, percentOfFakeCells: 5);
+            RunTest(dataset, k: 5, D: 5, q, h, percentOfFakeCells: 5);
+            RunTest(dataset, k: 5, D: 3, q, h, percentOfFakeCells: 5);
+            RunTest(dataset, k: 1, D: 3, q, h, percentOfFakeCells: 5);
         }
-        static void RunTest(string dataset, int k, int D, int q, int h)
+        static void RunTest(string dataset, int k, int D, int q, int h, int percentOfFakeCells)
         {
             #region Settings
 
@@ -45,7 +45,7 @@ namespace SecretSharing
 
             #region Spliting the items between the vendors
 
-            List<int[]> vendorsItemIndecis = new List<int[]>(); // The i's entry contains the indecis of all of the items offerd by vendor i
+            List<int[]> vendorsItemsIndecis = new List<int[]>(); // The i's entry contains the indecis of all of the items offerd by vendor i
             int[] itemsVendorIndex = new int[M]; // The i's entry contains the index of the vendor that holds that item
             int itemsPerVendor = M / k;
 
@@ -61,7 +61,7 @@ namespace SecretSharing
                 {
                     count = itemsPerVendor;
                 }
-                vendorsItemIndecis.Add(Enumerable.Range(start, count).ToArray());
+                vendorsItemsIndecis.Add(Enumerable.Range(start, count).ToArray());
                 Enumerable.Repeat(vendorIndex, count).ToArray().CopyTo(itemsVendorIndex, start);
             }
 
@@ -77,7 +77,7 @@ namespace SecretSharing
             {
                 trainingUserItemMatrix = ArraysExtensions.LoadIntMatrixFromFile(directoryName + "trainingUserItemMatrix.txt");
                 testingUserItemMatrix = ArraysExtensions.LoadIntMatrixFromFile(directoryName + "testingUserItemMatrix.txt");
-                similarityMatrix = ArraysExtensions.LoaddoubleMatrixFromFile(directoryName + "similarityMatrix.txt");
+                similarityMatrix = ArraysExtensions.LoadDoubleMatrixFromFile(directoryName + "similarityMatrix.txt");
             }
             else if (calcAndSaveToFile)
             {
@@ -105,7 +105,6 @@ namespace SecretSharing
             List<double[]>[] RHatShares = null;
             List<double[]>[] XiRShares = null;
 
-
             var secretSharingWatch = System.Diagnostics.Stopwatch.StartNew();
 
             RHatShares = Protocols.SecretShareRHat(trainingUserItemMatrix, D);
@@ -116,14 +115,11 @@ namespace SecretSharing
             Console.WriteLine($"Average time per vendor - Secret Sharing R_hat and xiR done in {(secretSharingTime / k)}");
             File.AppendAllLines(directoryName + "Times.txt", new string[1] { $"Average time per vendor - Secret Sharing R_hat and xiR done in {(secretSharingTime / k)}" });
 
-
-
             #endregion
 
             #region Obfuscate the shares of xiR (Protocol 4)
 
             List<double[]>[] obfuscatedXiRShares = null;
-
 
             var obfuscationWatch = System.Diagnostics.Stopwatch.StartNew();
 
@@ -134,10 +130,12 @@ namespace SecretSharing
             Console.WriteLine($"Average time per mediator - Obfuscating the shares of xiR done in {obfuscationTime}");
             File.AppendAllLines(directoryName + "Times.txt", new string[1] { $"Average time per mediator - Obfuscate the shares of xiR done in {obfuscationTime}" });
 
-
             #endregion
 
             #region Predict rating (Protocol 5)
+
+            int[,] YPUserItemMatrix = Protocols.GetYPUserItemMatrix(trainingUserItemMatrix, vendorsItemsIndecis, percentOfFakeCells);
+            double YP_MAE = 0;
 
             // get only the 30% indexes that dropped in order to compare
             var entriesToCompare = testingUserItemMatrix.GetNonZeroEntries();
@@ -200,14 +198,22 @@ namespace SecretSharing
                 vendorWatch.Stop();
 
                 double diff = Math.Abs(userItemMatrix[n, m] - predictedRating);
-
                 MAE += diff;
+
+                int YPRating = Protocols.GetPredictedRatingNoCrypto(YPUserItemMatrix, n, m, q); // Takes too much time...
+
+                double YPdiff = Math.Abs(YPUserItemMatrix[n, m] - YPRating);
+                YP_MAE += YPdiff;
+
                 entryIndex++;
             }
             MAE /= entriesToCompare.Count();
-            Console.WriteLine(MAE);
+            YP_MAE /= entriesToCompare.Count();
 
-            var mediatorsTime = new TimeSpan(0, 0, 0, 0, (int)(mediatorsWatch.ElapsedMilliseconds / entriesToCompare.Count));
+            File.AppendAllLines(directoryName + "Times.txt", new string[1] { $"The MAE is - {MAE}" });
+            File.AppendAllLines(directoryName + "Times.txt", new string[1] { $"The MAE For the YP Protocol is - {YP_MAE}" });
+
+            var mediatorsTime = new TimeSpan(0, 0, 0, 0, (int)(mediatorsWatch.ElapsedMilliseconds / entriesToCompare.Count / D));
             Console.WriteLine($"Average time per mediator - Predicting a single rating done in {mediatorsTime}");
             File.AppendAllLines(directoryName + "Times.txt", new string[1] { $"Average time per mediator - Predicting a single rating done in {mediatorsTime}" });
 
@@ -225,7 +231,7 @@ namespace SecretSharing
             int selectedVendor = 0; // from 0 to k-1
             int selectedUser = 0; // from 0 to N-1
 
-            int[] vendorItems = vendorsItemIndecis[selectedVendor];
+            int[] vendorItems = vendorsItemsIndecis[selectedVendor];
             int numOfItems = vendorItems.Length;
             int firstItemIndex = vendorItems[0];
 
@@ -281,7 +287,7 @@ namespace SecretSharing
             int[] mostRecommendedItems = valueAndIndexArray.Take(h).Select(o => o.Item2 + firstItemIndex).ToArray();
 
             mediatorsWatch.Stop();
-            var mediatorsTimePredicrRanking = new TimeSpan(0, 0, 0, 0, (int)mediatorsWatch.ElapsedMilliseconds);
+            var mediatorsTimePredicrRanking = new TimeSpan(0, 0, 0, 0, (int)mediatorsWatch.ElapsedMilliseconds / D);
             Console.WriteLine($"Average time per mediator - Predict ranking done in {mediatorsTimePredicrRanking}");
             File.AppendAllLines(directoryName + "Times.txt", new string[1] { $"Average time per mediator - Predict ranking done in {mediatorsTimePredicrRanking}" });
 
