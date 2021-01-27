@@ -105,24 +105,18 @@ namespace SecretSharing
             List<double[]>[] RHatShares = null;
             List<double[]>[] XiRShares = null;
 
-            if (loadFromFile)
-            {
-                RHatShares = ArraysExtensions.LoadDoubleMatrixArrayFromFile(directoryName + "RHatShares.txt");
-            }
-            else if (calcAndSaveToFile)
-            {
-                var secretSharingWatch = System.Diagnostics.Stopwatch.StartNew();
 
-                RHatShares = Protocols.SecretShareRHat(trainingUserItemMatrix, D);
-                XiRShares = Protocols.SecretShareXiR(trainingUserItemMatrix, D);
+            var secretSharingWatch = System.Diagnostics.Stopwatch.StartNew();
 
-                secretSharingWatch.Stop();
-                var secretSharingTime = new TimeSpan(0, 0, 0, 0, (int)secretSharingWatch.ElapsedMilliseconds);
-                Console.WriteLine($"Average time per vendor - Secret Sharing R_hat and xiR done in {(secretSharingTime / k)}");
-                File.AppendAllLines(directoryName + "Times.txt", new string[1] { $"Average time per vendor - Secret Sharing R_hat and xiR done in {(secretSharingTime / k)}" });
+            RHatShares = Protocols.SecretShareRHat(trainingUserItemMatrix, D);
+            XiRShares = Protocols.SecretShareXiR(trainingUserItemMatrix, D);
 
-                RHatShares.SaveToFile(directoryName + "RHatShares.txt");
-            }
+            secretSharingWatch.Stop();
+            var secretSharingTime = new TimeSpan(0, 0, 0, 0, (int)secretSharingWatch.ElapsedMilliseconds);
+            Console.WriteLine($"Average time per vendor - Secret Sharing R_hat and xiR done in {(secretSharingTime / k)}");
+            File.AppendAllLines(directoryName + "Times.txt", new string[1] { $"Average time per vendor - Secret Sharing R_hat and xiR done in {(secretSharingTime / k)}" });
+
+
 
             #endregion
 
@@ -130,23 +124,16 @@ namespace SecretSharing
 
             List<double[]>[] obfuscatedXiRShares = null;
 
-            if (loadFromFile)
-            {
-                obfuscatedXiRShares = ArraysExtensions.LoadDoubleMatrixArrayFromFile(directoryName + "obfuscatedXiRShares.txt");
-            }
-            else if (calcAndSaveToFile)
-            {
-                var obfuscationWatch = System.Diagnostics.Stopwatch.StartNew();
 
-                obfuscatedXiRShares = Protocols.ObfuscateShares(XiRShares);
+            var obfuscationWatch = System.Diagnostics.Stopwatch.StartNew();
 
-                obfuscationWatch.Stop();
-                var obfuscationTime = new TimeSpan(0, 0, 0, 0, (int)obfuscationWatch.ElapsedMilliseconds);
-                Console.WriteLine($"Average time per mediator - Obfuscating the shares of xiR done in {obfuscationTime}");
-                File.AppendAllLines(directoryName + "Times.txt", new string[1] { $"Average time per mediator - Obfuscate the shares of xiR done in {obfuscationTime}" });
+            obfuscatedXiRShares = Protocols.ObfuscateShares(XiRShares);
 
-                obfuscatedXiRShares.SaveToFile(directoryName + "obfuscatedXiRShares.txt");
-            }
+            obfuscationWatch.Stop();
+            var obfuscationTime = new TimeSpan(0, 0, 0, 0, (int)obfuscationWatch.ElapsedMilliseconds);
+            Console.WriteLine($"Average time per mediator - Obfuscating the shares of xiR done in {obfuscationTime}");
+            File.AppendAllLines(directoryName + "Times.txt", new string[1] { $"Average time per mediator - Obfuscate the shares of xiR done in {obfuscationTime}" });
+
 
             #endregion
 
