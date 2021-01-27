@@ -487,7 +487,7 @@ namespace SecretSharing
             {
                 int i = random.Next(matrix.GetLength(0));
                 int j = random.Next(matrix.GetLength(1));
-                if (matrix[i, j] == 0)
+                if (fakeMatrix[i, j] == 0)
                 {
                     fakeMatrix[i, j] = fakeRating;
                     numOfCellsToPlaceFakeRating--;
