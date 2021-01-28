@@ -724,10 +724,13 @@ namespace SecretSharing
             int predictedRating = (int)Math.Round(averageRating + change, 0);
 
             if (predictedRating > 5)
+            {
                 predictedRating = 5;
-
+            }
             else if (predictedRating < 1 && averageRating != 0)
+            {
                 predictedRating = 1;
+            }
 
             return predictedRating;
         }

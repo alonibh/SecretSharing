@@ -26,15 +26,15 @@ namespace SecretSharing
         {
             #region Settings
 
-            int[,] userItemMatrix = Protocols.ReadUserItemMatrix($"ratings-distict-{dataset}.dat");
-
-            int N = userItemMatrix.GetLength(0); // users
-            int M = userItemMatrix.GetLength(1); // items
-
             bool loadFromFile = false;
             bool saveToFile = false;
             bool predictRating = true;
             bool predictRanking = true;
+
+            int[,] userItemMatrix = Protocols.ReadUserItemMatrix($"ratings-distict-{dataset}.dat");
+
+            int N = userItemMatrix.GetLength(0); // users
+            int M = userItemMatrix.GetLength(1); // items
 
             if (D != 3 && D != 5)
             {
@@ -210,10 +210,13 @@ namespace SecretSharing
                     predictedRating = (int)Math.Round(predictedRating, 0);
 
                     if (predictedRating > 5)
+                    {
                         predictedRating = 5;
-
+                    }
                     else if (predictedRating < 1 && averageRating != 0)
+                    {
                         predictedRating = 1;
+                    }
 
                     vendorWatch.Stop();
 
@@ -328,9 +331,13 @@ namespace SecretSharing
                     if (trainingUserItemMatrix[selectedUser, item] == 0)
                     {
                         if (testingUserItemMatrix[selectedUser, item] == 0)
+                        {
                             itemsThatCanBeOffered.Add((item, false));
+                        }
                         else
+                        {
                             itemsThatCanBeOffered.Add((item, true));
+                        }
                     }
                 }
 
@@ -355,14 +362,19 @@ namespace SecretSharing
                         lock (myLock)
                         {
                             if (!mostRecommendedItems.Contains(zeroItem) || mostRecommendedItems.Contains(oneItem))
+                            {
                                 rankingAUC++;
+                            }
 
                             if (oneItemRating >= zeroItemRating)
+                            {
                                 ratingAUC++;
+                            }
 
                             if (YPOneItemRating >= YPZeroItemRating)
+                            {
                                 YP_AUC++;
-
+                            }
                         }
                     });
 
