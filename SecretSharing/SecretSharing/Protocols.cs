@@ -688,7 +688,9 @@ namespace SecretSharing
 
         public static int GetPredictedRatingNoCrypto(int[,] userItemMatrix, int n, int m, int q, double[,] similarityMatrixNoCrypto = null)
         {
-            var averageRating = userItemMatrix.GetAverageRatings()[m];
+
+            var averageRatings= userItemMatrix.GetAverageRatings();
+            var averageRating = averageRatings[m];
 
             if (similarityMatrixNoCrypto == null)
             {
@@ -701,8 +703,11 @@ namespace SecretSharing
             Parallel.For(0, userItemMatrix.GetLength(1), (i) =>
             {
                 int xiR = userItemMatrix[n, i] == 0 ? 0 : 1;
-                var averageRatingNoCrypto = userItemMatrix.GetAverageRatings()[i];
-                RHatn[i] = (userItemMatrix[n, i] - averageRatingNoCrypto) * xiR;
+                if (xiR == 1)
+                {
+                    var averageRatingNoCrypto = averageRatings[i];
+                    RHatn[i] = (userItemMatrix[n, i] - averageRatingNoCrypto);
+                }
             });
 
             var mult1 = ScalarProductVectors(smNoCrypto, RHatn);
@@ -717,6 +722,13 @@ namespace SecretSharing
             }
 
             int predictedRating = (int)Math.Round(averageRating + change, 0);
+
+            if (predictedRating > 5)
+                predictedRating = 5;
+
+            else if (predictedRating < 1 && averageRating != 0)
+                predictedRating = 1;
+
             return predictedRating;
         }
     }

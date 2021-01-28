@@ -214,6 +214,7 @@ namespace ProtocolTests
             var averageRating = userItemMatrix.GetAverageRatings()[m];
             double predictedRating = averageRating;
             double change = 0;
+
             if (y_dSum != 0)
             {
                 change = (double)(x_dSum / y_dSum) / Protocols.Q;
