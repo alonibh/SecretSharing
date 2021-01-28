@@ -12,7 +12,7 @@ namespace SecretSharing
             string dataset = "1M";
             // k - vendors
             // D - mediators
-            int q = 10; // num of similar items
+            int q = 80; // num of similar items
             int h = 6; // num of most recomended items to take
 
             RunTest(dataset, k: 2, D: 5, q, h, percentOfFakeCells: 5);
