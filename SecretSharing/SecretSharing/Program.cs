@@ -75,9 +75,9 @@ namespace SecretSharing
 
             if (loadFromFile)
             {
-                trainingUserItemMatrix = ArraysExtensions.LoadIntMatrixFromFile(directoryName + "trainingUserItemMatrix.txt");
-                testingUserItemMatrix = ArraysExtensions.LoadIntMatrixFromFile(directoryName + "testingUserItemMatrix.txt");
-                similarityMatrix = ArraysExtensions.LoadDoubleMatrixFromFile(directoryName + "similarityMatrix.txt");
+                trainingUserItemMatrix = Extensions.LoadIntMatrixFromFile(directoryName + "trainingUserItemMatrix.txt");
+                testingUserItemMatrix = Extensions.LoadIntMatrixFromFile(directoryName + "testingUserItemMatrix.txt");
+                similarityMatrix = Extensions.LoadDoubleMatrixFromFile(directoryName + "similarityMatrix.txt");
             }
             else if (calcAndSaveToFile)
             {
@@ -86,8 +86,8 @@ namespace SecretSharing
                 trainingUserItemMatrix = sets.Item1;
                 testingUserItemMatrix = sets.Item2;
 
-                trainingUserItemMatrix.SaveToFile(directoryName + "trainingUserItemMatrix.txt");
-                testingUserItemMatrix.SaveToFile(directoryName + "testingUserItemMatrix.txt");
+                //trainingUserItemMatrix.SaveToFile(directoryName + "trainingUserItemMatrix.txt");
+                //testingUserItemMatrix.SaveToFile(directoryName + "testingUserItemMatrix.txt");
 
                 File.AppendAllLines(directoryName + "Times.txt", new string[1] { $"Database - {dataset}, k={k} D={D}" });
 
@@ -95,7 +95,7 @@ namespace SecretSharing
 
                 //double[,] similarityMatrixNoCrypto = Protocols.CalcSimilarityMatrixNoCrypto(trainingUserItemMatrix);
 
-                similarityMatrix.SaveToFile(directoryName + "similarityMatrix.txt");
+                //similarityMatrix.SaveToFile(directoryName + "similarityMatrix.txt");
             }
 
             #endregion
@@ -112,8 +112,8 @@ namespace SecretSharing
 
             secretSharingWatch.Stop();
             var secretSharingTime = new TimeSpan(0, 0, 0, 0, (int)secretSharingWatch.ElapsedMilliseconds);
-            Console.WriteLine($"Average time per vendor - Secret Sharing R_hat and xiR done in {(secretSharingTime / k)}");
-            File.AppendAllLines(directoryName + "Times.txt", new string[1] { $"Average time per vendor - Secret Sharing R_hat and xiR done in {(secretSharingTime / k)}" });
+            Console.WriteLine($"Protocol 3 - Average runtime for each vendor is {(secretSharingTime / k).ToCustomTimeSpanFormat()}");
+            File.AppendAllLines(directoryName + "Times.txt", new string[1] { $"Protocol 3 - Average runtime for each vendor is {(secretSharingTime / k).ToCustomTimeSpanFormat()}" });
 
             #endregion
 
@@ -127,14 +127,15 @@ namespace SecretSharing
 
             obfuscationWatch.Stop();
             var obfuscationTime = new TimeSpan(0, 0, 0, 0, (int)obfuscationWatch.ElapsedMilliseconds);
-            Console.WriteLine($"Average time per mediator - Obfuscating the shares of xiR done in {obfuscationTime}");
-            File.AppendAllLines(directoryName + "Times.txt", new string[1] { $"Average time per mediator - Obfuscate the shares of xiR done in {obfuscationTime}" });
+            Console.WriteLine($"Protocol 4 - Average runtime for each mediator is {(obfuscationTime / D).ToCustomTimeSpanFormat()}");
+            File.AppendAllLines(directoryName + "Times.txt", new string[1] { $"Protocol 4 - Average runtime for each mediator is  {(obfuscationTime / D).ToCustomTimeSpanFormat()}" });
 
             #endregion
 
             #region Predict rating (Protocol 5)
 
             int[,] YPUserItemMatrix = Protocols.GetYPUserItemMatrix(trainingUserItemMatrix, vendorsItemsIndecis, percentOfFakeCells);
+            var YPsimilarityMatrixNoCrypto = Protocols.CalcSimilarityMatrixNoCrypto(YPUserItemMatrix);
             double YP_MAE = 0;
 
             // get only the 30% indexes that dropped in order to compare
@@ -157,6 +158,7 @@ namespace SecretSharing
                 double y_dSum = 0;
 
                 var sm = Protocols.GetSimilarityVectorForTopSimilarItemsToM(similarityMatrix, m, q, true);
+
                 foreach (var RHatShare in RHatShares)
                 {
                     double[] RHat_n = RHatShare.GetHorizontalVector(n);
@@ -200,9 +202,8 @@ namespace SecretSharing
                 double diff = Math.Abs(userItemMatrix[n, m] - predictedRating);
                 MAE += diff;
 
-                int YPRating = Protocols.GetPredictedRatingNoCrypto(YPUserItemMatrix, n, m, q); // Takes too much time...
-
-                double YPdiff = Math.Abs(YPUserItemMatrix[n, m] - YPRating);
+                int YPPredictedRatingRating = Protocols.GetPredictedRatingNoCrypto(YPUserItemMatrix, n, m, q, YPsimilarityMatrixNoCrypto);
+                double YPdiff = Math.Abs(userItemMatrix[n, m] - YPPredictedRatingRating);
                 YP_MAE += YPdiff;
 
                 entryIndex++;
@@ -213,13 +214,13 @@ namespace SecretSharing
             File.AppendAllLines(directoryName + "Times.txt", new string[1] { $"The MAE is - {MAE}" });
             File.AppendAllLines(directoryName + "Times.txt", new string[1] { $"The MAE For the YP Protocol is - {YP_MAE}" });
 
-            var mediatorsTime = new TimeSpan(0, 0, 0, 0, (int)(mediatorsWatch.ElapsedMilliseconds / entriesToCompare.Count / D));
-            Console.WriteLine($"Average time per mediator - Predicting a single rating done in {mediatorsTime}");
-            File.AppendAllLines(directoryName + "Times.txt", new string[1] { $"Average time per mediator - Predicting a single rating done in {mediatorsTime}" });
+            var mediatorsTime = new TimeSpan(0, 0, 0, 0, (int)(mediatorsWatch.ElapsedMilliseconds / entriesToCompare.Count));
+            Console.WriteLine($"Protocol 5 - Average runtime for each mediator is {(mediatorsTime / D).ToCustomTimeSpanFormat(true)}");
+            File.AppendAllLines(directoryName + "Times.txt", new string[1] { $"Protocol 5 - Average runtime for each mediator is {(mediatorsTime / D).ToCustomTimeSpanFormat(true)}" });
 
             var vendorTime = new TimeSpan(0, 0, 0, 0, (int)(vendorWatch.ElapsedMilliseconds / entriesToCompare.Count));
-            Console.WriteLine($"Average time for a vendor - Predicting a single rating done in {vendorTime}");
-            File.AppendAllLines(directoryName + "Times.txt", new string[1] { $"Average time for a vendor - Predicting a single rating done in {vendorTime}" });
+            Console.WriteLine($"Protocol 5 - Average runtime for each vendor is {vendorTime.ToCustomTimeSpanFormat(true)}");
+            File.AppendAllLines(directoryName + "Times.txt", new string[1] { $"Protocol 5 - Average runtime for each vendor is {vendorTime.ToCustomTimeSpanFormat(true)}" });
 
             #endregion
 
@@ -287,13 +288,13 @@ namespace SecretSharing
             int[] mostRecommendedItems = valueAndIndexArray.Take(h).Select(o => o.Item2 + firstItemIndex).ToArray();
 
             mediatorsWatch.Stop();
-            var mediatorsTimePredicrRanking = new TimeSpan(0, 0, 0, 0, (int)mediatorsWatch.ElapsedMilliseconds / D);
-            Console.WriteLine($"Average time per mediator - Predict ranking done in {mediatorsTimePredicrRanking}");
-            File.AppendAllLines(directoryName + "Times.txt", new string[1] { $"Average time per mediator - Predict ranking done in {mediatorsTimePredicrRanking}" });
+            var mediatorsTimePredicrRanking = new TimeSpan(0, 0, 0, 0, (int)mediatorsWatch.ElapsedMilliseconds);
+            Console.WriteLine($"Protocol 6 - Average runtime for each mediator is {(mediatorsTimePredicrRanking / D).ToCustomTimeSpanFormat(true)}");
+            File.AppendAllLines(directoryName + "Times.txt", new string[1] { $"Protocol 6 - Average runtime for each mediator is {(mediatorsTimePredicrRanking / D).ToCustomTimeSpanFormat(true)}" });
 
             var vendorTimePredictRanking = new TimeSpan(0, 0, 0, 0, (int)vendorWatch.ElapsedMilliseconds);
-            Console.WriteLine($"Average time for a vendor - Predict ranking done in {vendorTimePredictRanking}");
-            File.AppendAllLines(directoryName + "Times.txt", new string[1] { $"Average time for a vendor - Predict ranking done in {vendorTimePredictRanking}" });
+            Console.WriteLine($"Protocol 6 - Average runtime for each vendor is {vendorTimePredictRanking.ToCustomTimeSpanFormat(true)}");
+            File.AppendAllLines(directoryName + "Times.txt", new string[1] { $"Protocol 6 - Average runtime for each vendor is {vendorTimePredictRanking.ToCustomTimeSpanFormat(true)}" });
 
             #endregion
         }

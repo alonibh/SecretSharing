@@ -256,7 +256,7 @@ namespace SecretSharing
         }
 
         /// <summary>
-        /// Protocol 2 - Computing the scalar product between two vectors that are shared between D mediators
+        /// Protocol 1 - Computing the scalar product between two vectors that are shared between D mediators
         /// </summary>
         /// <param name="clShares"></param>
         /// <param name="cmShares"></param>
@@ -307,7 +307,7 @@ namespace SecretSharing
         }
 
         /// <summary>
-        /// Calculates the similarity matrix based on Protocol 1, and convert it to big integers
+        /// Calculates the similarity matrix based on Protocol 2, and convert it to big integers
         /// </summary>
         /// <param name="userItemMatrix">The user-item matrix</param>
         /// <param name="numOfShares">D</param>
@@ -356,7 +356,7 @@ namespace SecretSharing
 
                 similarityScoreWatch.Stop();
                 var similarityScoreTime = new TimeSpan(0, 0, 0, 0, (int)similarityScoreWatch.ElapsedMilliseconds);
-                Console.WriteLine($"{i}/{items} done in {similarityScoreTime:hh\\:mm\\:ss}");
+                Console.WriteLine($"{i}/{items} done in {similarityScoreTime.ToCustomTimeSpanFormat()}");
             }
 
             vendorPhase1Watch.Stop();
@@ -392,7 +392,7 @@ namespace SecretSharing
 
             vendorPhase2Watch.Stop();
             var phase2Time = new TimeSpan(0, 0, 0, 0, (int)vendorPhase2Watch.ElapsedMilliseconds);
-            Console.WriteLine($"Phase 2 - done in {phase2Time:hh\\:mm\\:ss}");
+            Console.WriteLine($"Phase 2 - done in {phase2Time.ToCustomTimeSpanFormat()}");
             totalVendorsDuration += vendorPhase2Watch.ElapsedMilliseconds;
 
             #endregion
@@ -436,7 +436,7 @@ namespace SecretSharing
 
                 similarityScoreWatch.Stop();
                 var similarityScoreTime = new TimeSpan(0, 0, 0, 0, (int)similarityScoreWatch.ElapsedMilliseconds);
-                Console.WriteLine($"{i}/{items} done in {similarityScoreTime:hh\\:mm\\:ss}");
+                Console.WriteLine($"{i}/{items} done in {similarityScoreTime.ToCustomTimeSpanFormat()}");
             }
 
             mediatorPhase3Watch.Stop();
@@ -445,12 +445,12 @@ namespace SecretSharing
             #endregion
 
             var vendorsTime = new TimeSpan(0, 0, 0, 0, (int)totalVendorsDuration);
-            Console.WriteLine($"Average runtime for each vendor in the offline stage is {(vendorsTime / k):hh\\:mm\\:ss}");
-            File.AppendAllLines(directoryName + "Times.txt", new string[1] { $"Average runtime for each vendor is {(vendorsTime / k):hh\\:mm\\:ss}" });
+            Console.WriteLine($"Protocol 2 - Average runtime for each vendor is {(vendorsTime / k).ToCustomTimeSpanFormat()}");
+            File.AppendAllLines(directoryName + "Times.txt", new string[1] { $"Protocol 2 - Average runtime for each vendor is {(vendorsTime / k).ToCustomTimeSpanFormat()}" });
 
             var mediatorsTime = new TimeSpan(0, 0, 0, 0, (int)totalMediatorsDuration);
-            Console.WriteLine($"Average runtime for each mediators is {mediatorsTime}");
-            File.AppendAllLines(directoryName + "Times.txt", new string[1] { $"Average runtime for each mediators in the offline stage is {mediatorsTime:hh\\:mm\\:ss}" });
+            Console.WriteLine($"Protocol 2 - Average runtime for each mediators is {mediatorsTime.ToCustomTimeSpanFormat()}");
+            File.AppendAllLines(directoryName + "Times.txt", new string[1] { $"Protocol 2 - Average runtime for each mediators is {mediatorsTime.ToCustomTimeSpanFormat()}" });
 
             return similarityMatrix;
         }
@@ -492,7 +492,7 @@ namespace SecretSharing
                 double[] clPow = Array.ConvertAll(cl, x => x * x);
                 double[] xiCl = Array.ConvertAll(cl, x => x == 0 ? (double)0 : 1);
 
-                for (int j = i + 1; j < items; j++)
+                Parallel.For(i + 1, items, (j) =>
                 {
                     double[] cm = userItemMatrix.GetVerticalVector(j).Select(o => (double)o).ToArray();
 
@@ -515,7 +515,7 @@ namespace SecretSharing
                     //Convert to integer value
                     similarityMatrix[i, j] = Math.Floor((similarityScore * Q) + 0.5);
                     similarityMatrix[j, i] = Math.Floor((similarityScore * Q) + 0.5);
-                }
+                });
             }
             return similarityMatrix;
         }
@@ -686,27 +686,36 @@ namespace SecretSharing
             return sm;
         }
 
-        public static int GetPredictedRatingNoCrypto(int[,] userItemMatrix, int n, int m, int q)
+        public static int GetPredictedRatingNoCrypto(int[,] userItemMatrix, int n, int m, int q, double[,] similarityMatrixNoCrypto = null)
         {
             var averageRating = userItemMatrix.GetAverageRatings()[m];
 
-            double[,] similarityMatrixNoCrypto = CalcSimilarityMatrixNoCrypto(userItemMatrix);
+            if (similarityMatrixNoCrypto == null)
+            {
+                similarityMatrixNoCrypto = CalcSimilarityMatrixNoCrypto(userItemMatrix);
+            }
+
             var smNoCrypto = GetSimilarityVectorForTopSimilarItemsToM(similarityMatrixNoCrypto, m, q, true);
 
             double[] RHatn = new double[userItemMatrix.GetLength(1)];
-            for (int i = 0; i < userItemMatrix.GetLength(1); i++)
+            Parallel.For(0, userItemMatrix.GetLength(1), (i) =>
             {
                 int xiR = userItemMatrix[n, i] == 0 ? 0 : 1;
                 var averageRatingNoCrypto = userItemMatrix.GetAverageRatings()[i];
                 RHatn[i] = (userItemMatrix[n, i] - averageRatingNoCrypto) * xiR;
-            }
+            });
 
             var mult1 = ScalarProductVectors(smNoCrypto, RHatn);
             var xiRn = userItemMatrix.GetXi().GetHorizontalVector(n).Select(o => (double)o).ToArray();
 
             var mult2 = ScalarProductVectors(smNoCrypto, xiRn);
 
-            var change = (double)mult1 / (double)mult2;
+            double change = 0;
+            if (mult1 != 0 && mult2 != 0)
+            {
+                change = (double)mult1 / (double)mult2;
+            }
+
             int predictedRating = (int)Math.Round(averageRating + change, 0);
             return predictedRating;
         }

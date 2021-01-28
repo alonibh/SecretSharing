@@ -4,7 +4,7 @@ using System.IO;
 
 namespace SecretSharing
 {
-    public static class ArraysExtensions
+    public static class Extensions
     {
         public static int[,] CreateRandomUserItemMatrix(int N, int M, int numR, int scaleStart, int scaleEnd, int scaleInterval)
         {
@@ -508,5 +508,15 @@ namespace SecretSharing
             }
         }
 
+        public static string ToCustomTimeSpanFormat(this TimeSpan timespan, bool includeMs = false)
+        {
+            string formatted = $"{timespan.Hours}h {timespan.Minutes}m {timespan.Seconds}s";
+            if (includeMs)
+            {
+                formatted += $" {timespan.Milliseconds}ms";
+            }
+
+            return formatted;
+        }
     }
 }
