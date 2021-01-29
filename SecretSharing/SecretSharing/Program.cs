@@ -27,7 +27,7 @@ namespace SecretSharing
             #region Settings
 
             bool loadFromFile = false;
-            bool saveToFile = false;
+            bool saveToFile = true;
             bool predictRating = true;
             bool predictRanking = true;
 
@@ -213,9 +213,9 @@ namespace SecretSharing
                     {
                         predictedRating = 5;
                     }
-                    else if (predictedRating < 1 && averageRating != 0)
+                    else if (predictedRating < 0)
                     {
-                        predictedRating = 1;
+                        predictedRating = 0;
                     }
 
                     vendorWatch.Stop();

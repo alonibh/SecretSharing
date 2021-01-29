@@ -288,6 +288,25 @@ namespace SecretSharing
             return xiMatrix;
         }
 
+        public static int[] GetXi(this int[] vector)
+        {
+            int length = vector.Length;
+            int[] xiVector = new int[length];
+
+            for (int i = 0; i < length; i++)
+            {
+                if (vector[i] == 0)
+                {
+                    xiVector[i] = 0;
+                }
+                else
+                {
+                    xiVector[i] = 1;
+                }
+            }
+
+            return xiVector;
+        }
         public static void SaveToFile(this double[,] matrix, string path)
         {
             List<string> lines = new List<string>();
