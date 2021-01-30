@@ -307,6 +307,7 @@ namespace SecretSharing
 
             return xiVector;
         }
+
         public static void SaveToFile(this double[,] matrix, string path)
         {
             List<string> lines = new List<string>();

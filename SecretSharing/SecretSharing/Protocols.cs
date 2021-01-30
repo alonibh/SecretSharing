@@ -734,6 +734,32 @@ namespace SecretSharing
 
             return predictedRating;
         }
+
+        public static double[] FindShamirCoefficients(int D)
+        {
+            double[] Cs = Enumerable.Repeat((double)1, D).ToArray();
+            double[] Xs = Enumerable.Range(1, D).Select(o => (double)o * D).ToArray();
+            for (int i = 0; i < D; i++)
+            {
+                for (int j = 0; j < D; j++)
+                {
+                    if (i != j)
+                    {
+                        Cs[i] *= (Xs[i] - Xs[j]);
+                    }
+                }
+            }
+
+            double xMult = Xs.Aggregate((a, x) => a * x);
+
+            double[] coeffs = new double[D];
+            for (int i = 0; i < D; i++)
+            {
+                coeffs[i] = xMult / (Xs[i] * Cs[i]);
+            }
+
+            return coeffs;
+        }
     }
 
     public class ScoreAndIndexComparer : IComparer<Tuple<double, int>>
