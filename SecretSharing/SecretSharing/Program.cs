@@ -36,7 +36,7 @@ namespace SecretSharing
             int N = userItemMatrix.GetLength(0); // users
             int M = userItemMatrix.GetLength(1); // items
 
-            if (D != 3 && D != 5)
+            if (D != 3 && D != 5 && D != 7)
             {
                 throw new Exception("Number of mediators must be 3 or 5");
             }

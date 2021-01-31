@@ -65,6 +65,24 @@ namespace ProtocolTests
         }
 
         [Fact]
+        public void TestCalcSimilarityMatrix7Mediators()
+        {
+            // ARRANGE
+            int[,] userItemMatrix = new int[2, 2] { { 2, 5 }, { 3, 4 } };
+            int[] itemsVendorIndex = new int[2] { 0, 1 };
+
+            //ACT
+            var similarityMatrix = Protocols.CalcSimilarityMatrix(userItemMatrix, 7, itemsVendorIndex);
+            var similarityMatrixNoCrypto = Protocols.CalcSimilarityMatrixNoCrypto(userItemMatrix);
+
+            //ASSERT
+            double Q = 100;
+            var similarityScore = (2 * 5 + 3 * 4) / Math.Sqrt((4 + 9) * (25 + 16));
+            var integeredSimilarityScore = (double)Math.Floor((similarityScore * Q) + 0.5);
+            Assert.Equal(integeredSimilarityScore, similarityMatrix[0, 1]);
+        }
+
+        [Fact]
         public void TestScalarProductBetweenShares()
         {
             // ARRANGE

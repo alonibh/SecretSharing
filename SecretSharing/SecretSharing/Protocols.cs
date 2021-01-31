@@ -122,7 +122,7 @@ namespace SecretSharing
         }
 
         /// <summary>
-        /// Shamir's secret sharing using a third-party nuget
+        /// Shamir's secret sharing specific for the case of 3/5/7 shares 
         /// </summary>
         /// <param name="vector"></param>
         /// <param name="numOfSharesToMake"></param>
@@ -156,7 +156,7 @@ namespace SecretSharing
                 }
             }
 
-            if (numOfShares == 5)
+            else if (numOfShares == 5)
             {
                 int shareCount = 0;
                 foreach (double entry in vector)
@@ -192,6 +192,63 @@ namespace SecretSharing
                                 break;
                             case 4:
                                 y = lastY + B9;
+                                break;
+                        }
+                        lastY = y;
+
+                        shares[i][shareCount] = y;
+                    }
+                    shareCount++;
+                }
+            }
+
+            else if (numOfShares == 7)
+            {
+                int shareCount = 0;
+                foreach (double entry in vector)
+                {
+                    double a = random.Next(2, int.MaxValue);
+                    double b = random.Next(2, int.MaxValue);
+                    double c = random.Next(2, int.MaxValue);
+
+                    double B = a + b + c;
+                    double B1 = 6 * c;
+                    double B2 = 2 * b;
+                    double B3 = B + B2 + B1;
+                    double B5 = B3 + B2 + 2 * B1;
+                    double B7 = B5 + B2 + 3 * B1;
+                    double B9 = B7 + B2 + 4 * B1;
+                    double B11 = B9 + B2 + 5 * B1;
+                    double B13 = B11 + B2 + 6 * B1;
+
+                    double lastY = 0;
+
+                    for (int i = 0; i < 7; i++)
+                    {
+                        int x = i + 1;
+                        double y = 0;
+                        switch (i)
+                        {
+                            case 0:
+                                y = entry + B;
+                                break;
+                            case 1:
+                                y = lastY + B3;
+                                break;
+                            case 2:
+                                y = lastY + B5;
+                                break;
+                            case 3:
+                                y = lastY + B7;
+                                break;
+                            case 4:
+                                y = lastY + B9;
+                                break;
+                            case 5:
+                                y = lastY + B11;
+                                break;
+                            case 6:
+                                y = lastY + B13;
                                 break;
                         }
                         lastY = y;
@@ -293,9 +350,13 @@ namespace SecretSharing
             {
                 secret = (double)((3 * (coordinates[0] - coordinates[1]) + coordinates[2]) % (BigInteger)PRIME);
             }
-            if (coordinates.Count == 5)
+            else if (coordinates.Count == 5)
             {
                 secret = (double)(((5 * (coordinates[0] - coordinates[3])) - (10 * (coordinates[1] - coordinates[2])) + coordinates[4]) % (BigInteger)PRIME);
+            }
+            else if (coordinates.Count == 7)
+            {
+                secret = (double)(((7 * (coordinates[0] - coordinates[5])) + (21 * (coordinates[4] - coordinates[1])) + (35 * (coordinates[2] - coordinates[3])) + coordinates[6]) % (BigInteger)PRIME);
             }
 
             if (secret < 0)
