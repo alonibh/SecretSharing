@@ -66,6 +66,145 @@ namespace SecretSharing
             return userItemMatrix;
         }
 
+        public static List<int?[,]> SplitUserItemMatrixBetweenVendors(int[,] userItemMatrix, int numOfVendors)
+        {
+            int N = userItemMatrix.GetLength(0);
+            int M = userItemMatrix.GetLength(1);
+            List<int?[,]> R_ks = new List<int?[,]>();
+            for (int i = 0; i < numOfVendors; i++)
+            {
+                R_ks.Add(new int?[N, M]);
+            }
+
+            Random r = new Random();
+            for (int i = 0; i < N; i++)
+            {
+                for (int j = 0; j < M; j++)
+                {
+                    int selectedVendor = r.Next(0, numOfVendors);
+                    R_ks[selectedVendor][i, j] = userItemMatrix[i, j];
+                }
+            }
+
+            // Add overlaps
+            for (int vendorIndex = 0; vendorIndex < numOfVendors; vendorIndex++)
+            {
+                for (int lap = 0; lap < 50; lap++)
+                {
+                    int i = r.Next(0, N);
+                    int j = r.Next(0, M);
+                    if (R_ks[vendorIndex][i, j] == null)
+                        R_ks[vendorIndex][i, j] = 0;
+                }
+            }
+            return R_ks;
+        }
+
+        public static double[,] CalcSimilarityMatrix(List<int?[,]> R_ks, int numOfMediators, string directoryName)
+        {
+            int N = R_ks[0].GetLength(0);
+            int M = R_ks[0].GetLength(1);
+
+            List<double[,]> RShares = new List<double[,]>();
+            List<double[,]> SqRShares = new List<double[,]>();
+            List<double[,]> XiRShares = new List<double[,]>();
+
+            for (int mediatorIndex = 0; mediatorIndex < numOfMediators; mediatorIndex++)
+            {
+                RShares.Add(new double[N, M]);
+                SqRShares.Add(new double[N, M]);
+                XiRShares.Add(new double[N, M]);
+            }
+
+            foreach (var R_k in R_ks)
+            {
+                int?[,] sq = R_k.CalcSq();
+                int?[,] xi = R_k.CalcXi();
+
+                var RkShares = ShamirSecretSharingMatrix(R_k, numOfMediators);
+                var SqRkShares = ShamirSecretSharingMatrix(sq, numOfMediators);
+                var XiRkShares = ShamirSecretSharingMatrix(xi, numOfMediators);
+
+                for (int mediatorIndex = 0; mediatorIndex < numOfMediators; mediatorIndex++)
+                {
+                    RShares[mediatorIndex].AddShare(RkShares[mediatorIndex]);
+
+                    SqRShares[mediatorIndex].AddShare(SqRkShares[mediatorIndex]);
+
+                    XiRShares[mediatorIndex].AddShare(XiRkShares[mediatorIndex]);
+                }
+            }
+
+            double[,] similarityMatrix = new double[M, M];
+
+
+            for (int i = 0; i < M; i++)
+            {
+                List<double[]> clShares = new List<double[]>();
+                foreach (var share in RShares)
+                {
+                    clShares.Add(share.GetVerticalVector(i));
+                }
+
+                List<double[]> SqClShares = new List<double[]>();
+                foreach (var share in SqRShares)
+                {
+                    SqClShares.Add(share.GetVerticalVector(i));
+                }
+
+                List<double[]> XiClShares = new List<double[]>();
+                foreach (var share in XiRShares)
+                {
+                    XiClShares.Add(share.GetVerticalVector(i));
+                }
+
+                Parallel.For(i + 1, M, (j) =>
+                {
+                    List<double[]> cmShares = new List<double[]>();
+                    foreach (var share in RShares)
+                    {
+                        cmShares.Add(share.GetVerticalVector(j));
+                    }
+
+                    List<double[]> SqCmShares = new List<double[]>();
+                    foreach (var share in SqRShares)
+                    {
+                        SqCmShares.Add(share.GetVerticalVector(j));
+                    }
+
+                    List<double[]> XiCmShares = new List<double[]>();
+                    foreach (var share in XiRShares)
+                    {
+                        XiCmShares.Add(share.GetVerticalVector(j));
+                    }
+
+                    double similarityScore = 0;
+
+                    double z1 = ScalarProductShares(clShares, cmShares);
+
+                    double z2 = ScalarProductShares(SqClShares, XiCmShares);
+
+                    double z3 = ScalarProductShares(XiClShares, SqCmShares);
+
+                    var mult = z2 * z3;
+                    if (mult != 0)
+                    {
+                        similarityScore = z1 / (Math.Sqrt(mult));
+                    }
+
+                    if (similarityScore != 0)
+                    {
+                        //Convert to integer value
+                        similarityMatrix[i, j] = Math.Floor((similarityScore * Q) + 0.5);
+                        similarityMatrix[j, i] = Math.Floor((similarityScore * Q) + 0.5);
+                    }
+
+                });
+            }
+
+            return similarityMatrix;
+        }
+
         public static List<double[]> AllOrNothingSecretSharing(double[] vector, int numOfShares)
         {
             List<double[]> shares = new List<double[]>();
@@ -146,7 +285,6 @@ namespace SecretSharing
 
                     for (int i = 0; i < 3; i++)
                     {
-                        int x = i + 1;
                         var y = lastY + a;
                         lastY = y;
 
@@ -174,7 +312,6 @@ namespace SecretSharing
 
                     for (int i = 0; i < 5; i++)
                     {
-                        int x = i + 1;
                         double y = 0;
                         switch (i)
                         {
@@ -225,7 +362,6 @@ namespace SecretSharing
 
                     for (int i = 0; i < 7; i++)
                     {
-                        int x = i + 1;
                         double y = 0;
                         switch (i)
                         {
@@ -256,6 +392,154 @@ namespace SecretSharing
                         shares[i][shareCount] = y;
                     }
                     shareCount++;
+                }
+            }
+
+            return shares;
+        }
+
+        /// <summary>
+        /// Shamir's secret sharing specific for the case of 3/5/7 shares 
+        /// </summary>
+        /// <param name="vector"></param>
+        /// <param name="numOfSharesToMake"></param>
+        /// <param name="numOfSharesForRecovery"></param>
+        /// <returns>Shares matrix for each of the mediators</returns>
+        public static List<double[,]> ShamirSecretSharingMatrix(int?[,] matrix, int numOfShares)
+        {
+            var shares = new List<double[,]>();
+            int N = matrix.GetLength(0);
+            int M = matrix.GetLength(0);
+
+            for (int i = 0; i < numOfShares; i++)
+            {
+                shares.Add(new double[N, M]);
+            }
+
+            if (numOfShares == 3)
+            {
+                for (int i = 0; i < N; i++)
+                {
+                    for (int j = 0; j < M; j++)
+                    {
+                        double a = random.Next(2, int.MaxValue);
+                        double lastY = matrix[i, j] ?? 0;
+
+                        for (int shareIndex = 0; shareIndex < 3; shareIndex++)
+                        {
+                            var y = lastY + a;
+                            lastY = y;
+
+                            shares[shareIndex][i, j] = y;
+                        }
+                    }
+                }
+            }
+
+            else if (numOfShares == 5)
+            {
+                for (int i = 0; i < N; i++)
+                {
+                    for (int j = 0; j < M; j++)
+                    {
+                        double entry = matrix[i, j] ?? 0;
+
+                        double a = random.Next(2, int.MaxValue);
+                        double b = random.Next(2, int.MaxValue);
+
+                        double B = a + b;
+                        double B2 = b + b;
+                        double B3 = B + B2;
+                        double B5 = B3 + B2;
+                        double B7 = B5 + B2;
+                        double B9 = B7 + B2;
+                        double lastY = 0;
+
+                        for (int shareIndex = 0; shareIndex < 5; shareIndex++)
+                        {
+                            double y = 0;
+                            switch (shareIndex)
+                            {
+                                case 0:
+                                    y = entry + B;
+                                    break;
+                                case 1:
+                                    y = lastY + B3;
+                                    break;
+                                case 2:
+                                    y = lastY + B5;
+                                    break;
+                                case 3:
+                                    y = lastY + B7;
+                                    break;
+                                case 4:
+                                    y = lastY + B9;
+                                    break;
+                            }
+                            lastY = y;
+
+                            shares[shareIndex][i, j] = y;
+                        }
+                    }
+                }
+            }
+
+            else if (numOfShares == 7)
+            {
+                for (int i = 0; i < N; i++)
+                {
+                    for (int j = 0; j < M; j++)
+                    {
+                        double entry = matrix[i, j] ?? 0;
+
+                        double a = random.Next(2, int.MaxValue);
+                        double b = random.Next(2, int.MaxValue);
+                        double c = random.Next(2, int.MaxValue);
+
+                        double B = a + b + c;
+                        double B1 = 6 * c;
+                        double B2 = 2 * b;
+                        double B3 = B + B2 + B1;
+                        double B5 = B3 + B2 + 2 * B1;
+                        double B7 = B5 + B2 + 3 * B1;
+                        double B9 = B7 + B2 + 4 * B1;
+                        double B11 = B9 + B2 + 5 * B1;
+                        double B13 = B11 + B2 + 6 * B1;
+
+                        double lastY = 0;
+
+                        for (int shareIndex = 0; shareIndex < 7; shareIndex++)
+                        {
+                            double y = 0;
+                            switch (shareIndex)
+                            {
+                                case 0:
+                                    y = entry + B;
+                                    break;
+                                case 1:
+                                    y = lastY + B3;
+                                    break;
+                                case 2:
+                                    y = lastY + B5;
+                                    break;
+                                case 3:
+                                    y = lastY + B7;
+                                    break;
+                                case 4:
+                                    y = lastY + B9;
+                                    break;
+                                case 5:
+                                    y = lastY + B11;
+                                    break;
+                                case 6:
+                                    y = lastY + B13;
+                                    break;
+                            }
+                            lastY = y;
+
+                            shares[shareIndex][i, j] = y;
+                        }
+                    }
                 }
             }
 
@@ -373,7 +657,7 @@ namespace SecretSharing
         /// <param name="userItemMatrix">The user-item matrix</param>
         /// <param name="numOfShares">D</param>
         /// <returns></returns>
-        public static double[,] CalcSimilarityMatrix(int[,] userItemMatrix, int numOfShares, int[] itemsVendorIndex, string directoryName = "")
+        public static double[,] CalcSimilarityMatrixOld(int[,] userItemMatrix, int numOfShares, int[] itemsVendorIndex, string directoryName = "")
         {
             int k = itemsVendorIndex.Last() + 1;
             int items = userItemMatrix.GetLength(1);

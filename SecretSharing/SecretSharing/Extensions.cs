@@ -517,6 +517,54 @@ namespace SecretSharing
             return fakeMatrix;
         }
 
+        public static int?[,] CalcSq(this int?[,] matrix)
+        {
+            int N = matrix.GetLength(0);
+            int M = matrix.GetLength(1);
+
+            int?[,] sq = new int?[N, M];
+            for (int i = 0; i < N; i++)
+            {
+                for (int j = 0; j < M; j++)
+                {
+                    if (matrix[i, j] != null)
+                        sq[i, j] = (int?)Math.Pow(matrix[i, j].Value, 2);
+                }
+            }
+            return sq;
+        }
+
+        public static int?[,] CalcXi(this int?[,] matrix)
+        {
+            int N = matrix.GetLength(0);
+            int M = matrix.GetLength(1);
+
+            int?[,] xi = new int?[N, M];
+            for (int i = 0; i < N; i++)
+            {
+                for (int j = 0; j < M; j++)
+                {
+                    if (matrix[i, j] != null)
+                        xi[i, j] = matrix[i, j].Value == 0 ? 0 : 1;
+                }
+            }
+            return xi;
+        }
+
+        public static void AddShare(this double[,] matrix, double[,] share)
+        {
+            int N = matrix.GetLength(0);
+            int M = matrix.GetLength(1);
+
+            for (int i = 0; i < N; i++)
+            {
+                for (int j = 0; j < M; j++)
+                {
+                    matrix[i, j] += share[i, j];
+                }
+            }
+        }
+
         public static void CopySubMatrix(this int[,] matrix, int[,] subMatrix, int verticalIndexStart)
         {
             for (int i = 0; i < subMatrix.GetLength(0); i++)

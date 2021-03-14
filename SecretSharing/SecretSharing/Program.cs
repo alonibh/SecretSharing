@@ -10,24 +10,91 @@ namespace SecretSharing
     {
         static void Main()
         {
-            string dataset = "1M";
+            string dataset = "test";
             // k - vendors
             // D - mediators
             int q = 80; // num of similar items
             int h = 20; // num of most recomended items to take
 
             RunTest(dataset, k: 2, D: 5, q, h, percentOfFakeCells: 5);
-            RunTest(dataset, k: 2, D: 3, q, h, percentOfFakeCells: 5);
-            RunTest(dataset, k: 5, D: 5, q, h, percentOfFakeCells: 5);
-            RunTest(dataset, k: 5, D: 3, q, h, percentOfFakeCells: 5);
-            RunTest(dataset, k: 1, D: 3, q, h, percentOfFakeCells: 5);
+
+
+            RunTestOldVersion(dataset, k: 2, D: 5, q, h, percentOfFakeCells: 5);
+            RunTestOldVersion(dataset, k: 2, D: 3, q, h, percentOfFakeCells: 5);
+            RunTestOldVersion(dataset, k: 5, D: 5, q, h, percentOfFakeCells: 5);
+            RunTestOldVersion(dataset, k: 5, D: 3, q, h, percentOfFakeCells: 5);
+            RunTestOldVersion(dataset, k: 1, D: 3, q, h, percentOfFakeCells: 5);
         }
+
         static void RunTest(string dataset, int k, int D, int q, int h, int percentOfFakeCells)
         {
             #region Settings
 
             bool loadFromFile = false;
-            bool saveToFile = true;
+            bool saveToFile = false;
+            bool predictRating = true;
+            bool predictRanking = true;
+
+            int[,] userItemMatrix = Protocols.ReadUserItemMatrix($"ratings-distict-{dataset}.dat");
+
+            int N = userItemMatrix.GetLength(0); // users
+            int M = userItemMatrix.GetLength(1); // items
+
+            if (D != 3 && D != 5 && D != 7)
+            {
+                throw new Exception("Number of mediators must be 3 or 5");
+            }
+
+            string directoryName = $"k-{k}, D-{D}, Dataset-{dataset}/";
+            Directory.CreateDirectory(directoryName);
+
+            #endregion
+
+            #region Computing the similarity matrix (Protocol 1+2)
+
+            int[,] trainingUserItemMatrix = null;
+            int[,] testingUserItemMatrix = null;
+            double[,] similarityMatrix = null;
+            List<int?[,]> R_ks;
+
+            if (loadFromFile)
+            {
+                trainingUserItemMatrix = Extensions.LoadIntMatrixFromFile(directoryName + "trainingUserItemMatrix.txt");
+                testingUserItemMatrix = Extensions.LoadIntMatrixFromFile(directoryName + "testingUserItemMatrix.txt");
+                similarityMatrix = Extensions.LoadDoubleMatrixFromFile(directoryName + "similarityMatrix.txt");
+
+                //TODO load all R_K's
+            }
+            else
+            {
+                File.AppendAllLines(directoryName + "Times.txt", new string[1] { $"Database - {dataset}, k={k} D={D}" });
+
+                var sets = userItemMatrix.SplitToTrainingAndTesting();
+
+                trainingUserItemMatrix = sets.Item1;
+                testingUserItemMatrix = sets.Item2;
+
+                R_ks = Protocols.SplitUserItemMatrixBetweenVendors(trainingUserItemMatrix, k);
+
+                similarityMatrix = Protocols.CalcSimilarityMatrix(R_ks, D, directoryName);
+            }
+
+            if (saveToFile)
+            {
+                trainingUserItemMatrix.SaveToFile(directoryName + "trainingUserItemMatrix.txt");
+                testingUserItemMatrix.SaveToFile(directoryName + "testingUserItemMatrix.txt");
+                similarityMatrix.SaveToFile(directoryName + "similarityMatrix.txt");
+            }
+
+            #endregion
+        }
+
+        static void RunTestOldVersion(string dataset, int k, int D, int q, int h, int percentOfFakeCells)
+        {
+            #region Settings
+
+            bool loadFromFile = false;
+            bool saveToFile = false;
             bool predictRating = true;
             bool predictRanking = true;
 
@@ -95,7 +162,7 @@ namespace SecretSharing
                 trainingUserItemMatrix = sets.Item1;
                 testingUserItemMatrix = sets.Item2;
 
-                similarityMatrix = Protocols.CalcSimilarityMatrix(trainingUserItemMatrix, D, itemsVendorIndex, directoryName);
+                similarityMatrix = Protocols.CalcSimilarityMatrixOld(trainingUserItemMatrix, D, itemsVendorIndex, directoryName);
 
                 YPUserItemMatrix = Protocols.GetYPUserItemMatrix(trainingUserItemMatrix, vendorsItemsIndecis, percentOfFakeCells);
                 YPsimilarityMatrix = Protocols.CalcSimilarityMatrixNoCrypto(YPUserItemMatrix);

@@ -29,14 +29,51 @@ namespace ProtocolTests
         }
 
         [Fact]
-        public void TestCalcSimilarityMatrix3Mediators()
+        public void TestCalcSimilarityMatrix3MediatorsOld()
         {
             // ARRANGE
             int[,] userItemMatrix = new int[2, 2] { { 2, 5 }, { 3, 4 } };
             int[] itemsVendorIndex = new int[2] { 0, 1 };
 
             //ACT
-            var similarityMatrix = Protocols.CalcSimilarityMatrix(userItemMatrix, 3, itemsVendorIndex);
+            var similarityMatrix = Protocols.CalcSimilarityMatrixOld(userItemMatrix, 3, itemsVendorIndex);
+            var similarityMatrixNoCrypto = Protocols.CalcSimilarityMatrixNoCrypto(userItemMatrix);
+
+            //ASSERT
+            double Q = 100;
+            var similarityScore = (2 * 5 + 3 * 4) / Math.Sqrt((4 + 9) * (25 + 16));
+            var integeredSimilarityScore = (double)Math.Floor((similarityScore * Q) + 0.5);
+            Assert.Equal(integeredSimilarityScore, similarityMatrix[0, 1]);
+        }
+
+        [Fact]
+        public void TestCalcSimilarityMatrix3Mediators()
+        {
+            // ARRANGE
+            int[,] userItemMatrix = new int[2, 2] { { 2, 5 }, { 3, 4 } };
+
+            //ACT
+            var R_ks = Protocols.SplitUserItemMatrixBetweenVendors(userItemMatrix, 2);
+
+            var similarityMatrix = Protocols.CalcSimilarityMatrix(R_ks, 3, "");
+            var similarityMatrixNoCrypto = Protocols.CalcSimilarityMatrixNoCrypto(userItemMatrix);
+
+            //ASSERT
+            double Q = 100;
+            var similarityScore = (2 * 5 + 3 * 4) / Math.Sqrt((4 + 9) * (25 + 16));
+            var integeredSimilarityScore = (double)Math.Floor((similarityScore * Q) + 0.5);
+            Assert.Equal(integeredSimilarityScore, similarityMatrix[0, 1]);
+        }
+
+        [Fact]
+        public void TestCalcSimilarityMatrix5MediatorsOld()
+        {
+            // ARRANGE
+            int[,] userItemMatrix = new int[2, 2] { { 2, 5 }, { 3, 4 } };
+            int[] itemsVendorIndex = new int[2] { 0, 1 };
+
+            //ACT
+            var similarityMatrix = Protocols.CalcSimilarityMatrixOld(userItemMatrix, 5, itemsVendorIndex);
             var similarityMatrixNoCrypto = Protocols.CalcSimilarityMatrixNoCrypto(userItemMatrix);
 
             //ASSERT
@@ -51,10 +88,29 @@ namespace ProtocolTests
         {
             // ARRANGE
             int[,] userItemMatrix = new int[2, 2] { { 2, 5 }, { 3, 4 } };
+
+            //ACT
+            var R_ks = Protocols.SplitUserItemMatrixBetweenVendors(userItemMatrix, 2);
+
+            var similarityMatrix = Protocols.CalcSimilarityMatrix(R_ks, 5, "");
+            var similarityMatrixNoCrypto = Protocols.CalcSimilarityMatrixNoCrypto(userItemMatrix);
+
+            //ASSERT
+            double Q = 100;
+            var similarityScore = (2 * 5 + 3 * 4) / Math.Sqrt((4 + 9) * (25 + 16));
+            var integeredSimilarityScore = (double)Math.Floor((similarityScore * Q) + 0.5);
+            Assert.Equal(integeredSimilarityScore, similarityMatrix[0, 1]);
+        }
+
+        [Fact]
+        public void TestCalcSimilarityMatrix7MediatorsOld()
+        {
+            // ARRANGE
+            int[,] userItemMatrix = new int[2, 2] { { 2, 5 }, { 3, 4 } };
             int[] itemsVendorIndex = new int[2] { 0, 1 };
 
             //ACT
-            var similarityMatrix = Protocols.CalcSimilarityMatrix(userItemMatrix, 5, itemsVendorIndex);
+            var similarityMatrix = Protocols.CalcSimilarityMatrixOld(userItemMatrix, 7, itemsVendorIndex);
             var similarityMatrixNoCrypto = Protocols.CalcSimilarityMatrixNoCrypto(userItemMatrix);
 
             //ASSERT
@@ -69,10 +125,11 @@ namespace ProtocolTests
         {
             // ARRANGE
             int[,] userItemMatrix = new int[2, 2] { { 2, 5 }, { 3, 4 } };
-            int[] itemsVendorIndex = new int[2] { 0, 1 };
 
             //ACT
-            var similarityMatrix = Protocols.CalcSimilarityMatrix(userItemMatrix, 7, itemsVendorIndex);
+            var R_ks = Protocols.SplitUserItemMatrixBetweenVendors(userItemMatrix, 2);
+
+            var similarityMatrix = Protocols.CalcSimilarityMatrix(R_ks, 7, "");
             var similarityMatrixNoCrypto = Protocols.CalcSimilarityMatrixNoCrypto(userItemMatrix);
 
             //ASSERT
@@ -149,7 +206,7 @@ namespace ProtocolTests
             int[] itemsVendorIndex = new int[3] { 0, 1, 2 };
 
 
-            double[,] similarityMatrix = Protocols.CalcSimilarityMatrix(userItemMatrix, D, itemsVendorIndex);
+            double[,] similarityMatrix = Protocols.CalcSimilarityMatrixOld(userItemMatrix, D, itemsVendorIndex);
 
             var XiRShares = Protocols.SecretShareXiR(userItemMatrix, D);
 
@@ -204,7 +261,7 @@ namespace ProtocolTests
             double y_dSum = 0;
 
             // ACT
-            double[,] similarityMatrix = Protocols.CalcSimilarityMatrix(userItemMatrix, D, itemsVendorIndex);
+            double[,] similarityMatrix = Protocols.CalcSimilarityMatrixOld(userItemMatrix, D, itemsVendorIndex);
 
             var RHatShares = Protocols.SecretShareRHat(userItemMatrix, D);
             var XiRShares = Protocols.SecretShareXiR(userItemMatrix, D);
@@ -359,6 +416,74 @@ namespace ProtocolTests
             // ASSERT
             Assert.Equal(expectedMatrix, YP);
 
+        }
+
+        [Fact]
+        public void TestUserItemMatrixSplit()
+        {
+            // ARRANGE
+            int[,] userItemMatrix = new int[4, 4] { { 1, 2, 0, 3 }, { 3, 4, 1, 5 }, { 2, 3, 3, 4 }, { 1, 2, 3, 2 } };
+            int N = userItemMatrix.GetLength(0);
+            int M = userItemMatrix.GetLength(1);
+
+
+            // ACT
+            var R_ks = Protocols.SplitUserItemMatrixBetweenVendors(userItemMatrix, 3);
+
+            // ASSERT
+            int?[,] sum = new int?[N, M];
+            foreach (var R_k in R_ks)
+            {
+                for (int i = 0; i < N; i++)
+                {
+                    for (int j = 0; j < M; j++)
+                    {
+                        if (sum[i, j] == null)
+                            sum[i, j] = R_k[i, j];
+                        else if (R_k[i, j] != null)
+                            sum[i, j] += R_k[i, j];
+
+                    }
+                }
+            }
+
+            for (int i = 0; i < N; i++)
+            {
+                for (int j = 0; j < M; j++)
+                {
+                    Assert.Equal(userItemMatrix[i, j], sum[i, j]);
+                }
+            }
+        }
+
+        [Fact]
+        public void TestCalcSq()
+        {
+            // ARRANGE
+            int?[,] matrix = new int?[3, 3] { { 1, 2, null }, { 3, null, 5 }, { null, 3, 4 } };
+            int?[,] realSq = new int?[3, 3] { { 1, 4, null }, { 9, null, 25 }, { null, 9, 16 } };
+
+
+            // ACT
+            var sq = matrix.CalcSq();
+
+            // ASSERT
+            Assert.Equal(realSq, sq);
+        }
+
+        [Fact]
+        public void TestCalcXi()
+        {
+            // ARRANGE
+            int?[,] matrix = new int?[3, 3] { { 1, 0, null }, { 3, null, 5 }, { null, 3, 4 } };
+            int?[,] realXi = new int?[3, 3] { { 1, 0, null }, { 1, null, 1 }, { null, 1, 1 } };
+
+
+            // ACT
+            var xi = matrix.CalcXi();
+
+            // ASSERT
+            Assert.Equal(realXi, xi);
         }
     }
 }
