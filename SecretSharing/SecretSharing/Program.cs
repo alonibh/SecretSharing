@@ -11,6 +11,7 @@ namespace SecretSharing
         static void Main()
         {
             string dataset = "test";
+
             // k - vendors
             // D - mediators
             int q = 80; // num of similar items
@@ -19,11 +20,11 @@ namespace SecretSharing
             RunTest(dataset, k: 2, D: 5, q, h, percentOfFakeCells: 5);
 
 
-            RunTestOldVersion(dataset, k: 2, D: 5, q, h, percentOfFakeCells: 5);
-            RunTestOldVersion(dataset, k: 2, D: 3, q, h, percentOfFakeCells: 5);
-            RunTestOldVersion(dataset, k: 5, D: 5, q, h, percentOfFakeCells: 5);
-            RunTestOldVersion(dataset, k: 5, D: 3, q, h, percentOfFakeCells: 5);
-            RunTestOldVersion(dataset, k: 1, D: 3, q, h, percentOfFakeCells: 5);
+            //RunTestOldVersion(dataset, k: 2, D: 5, q, h, percentOfFakeCells: 5);
+            //RunTestOldVersion(dataset, k: 2, D: 3, q, h, percentOfFakeCells: 5);
+            //RunTestOldVersion(dataset, k: 5, D: 5, q, h, percentOfFakeCells: 5);
+            //RunTestOldVersion(dataset, k: 5, D: 3, q, h, percentOfFakeCells: 5);
+            //RunTestOldVersion(dataset, k: 1, D: 3, q, h, percentOfFakeCells: 5);
         }
 
         static void RunTest(string dataset, int k, int D, int q, int h, int percentOfFakeCells)
@@ -50,40 +51,104 @@ namespace SecretSharing
 
             #endregion
 
-            #region Computing the similarity matrix (Protocol 1+2)
+            #region Computing the similarity matrix and the shares (Protocol 1+2)
 
             int[,] trainingUserItemMatrix = null;
             int[,] testingUserItemMatrix = null;
             double[,] similarityMatrix = null;
+            List<double[,]> RShares = null;
+            List<double[,]> SqRShare = null;
+            List<double[,]> XiRShares = null;
             List<int?[,]> R_ks;
 
-            if (loadFromFile)
-            {
-                trainingUserItemMatrix = Extensions.LoadIntMatrixFromFile(directoryName + "trainingUserItemMatrix.txt");
-                testingUserItemMatrix = Extensions.LoadIntMatrixFromFile(directoryName + "testingUserItemMatrix.txt");
-                similarityMatrix = Extensions.LoadDoubleMatrixFromFile(directoryName + "similarityMatrix.txt");
 
-                //TODO load all R_K's
+            var sets = userItemMatrix.SplitToTrainingAndTesting();
+
+            trainingUserItemMatrix = sets.Item1;
+            testingUserItemMatrix = sets.Item2;
+
+            R_ks = Protocols.SplitUserItemMatrixBetweenVendors(trainingUserItemMatrix, k);
+
+            SimilarityMatrixAndShares smas = Protocols.CalcSimilarityMatrix(R_ks, D, directoryName);
+            similarityMatrix = smas.SimilarityMatrix;
+            RShares = smas.RShares;
+            SqRShare = smas.SqRShares;
+            XiRShares = smas.XiRShares;
+
+
+            #endregion
+
+            #region Obfuscate the shares of XiRd (Protocol 3)
+
+            var obfuscatedXiRShares = Protocols.ObfuscateShares(XiRShares);
+
+            #endregion
+
+            #region Predict rating (Protocol 6)
+
+            var entriesToCompare = testingUserItemMatrix.GetNonZeroEntries();
+
+            double[] averageRatings = new double[M];
+            for (int itemIndex = 0; itemIndex < M; itemIndex++)
+            {
+                averageRatings[itemIndex] = Protocols.ComputeAverageRating(RShares, obfuscatedXiRShares, itemIndex);
             }
-            else
+
+            foreach (var entry in entriesToCompare)
             {
-                File.AppendAllLines(directoryName + "Times.txt", new string[1] { $"Database - {dataset}, k={k} D={D}" });
+                int n = entry.Item1;
+                int m = entry.Item2;
 
-                var sets = userItemMatrix.SplitToTrainingAndTesting();
+                var sm = Protocols.GetSimilarityVectorForTopSimilarItemsToM(similarityMatrix, m, q, true);
 
-                trainingUserItemMatrix = sets.Item1;
-                testingUserItemMatrix = sets.Item2;
+                List<double[]> RnShares = new List<double[]>();
+                for (int shareCount = 0; shareCount < RShares.Count; shareCount++)
+                {
+                    RnShares.Add(RShares[shareCount].GetHorizontalVector(n));
+                }
+                double Unm = Protocols.MultiplySharesByVector(RnShares, sm);
 
-                R_ks = Protocols.SplitUserItemMatrixBetweenVendors(trainingUserItemMatrix, k);
+                List<double[]> XiRnShares = new List<double[]>();
+                for (int shareCount = 0; shareCount < RShares.Count; shareCount++)
+                {
+                    XiRnShares.Add(obfuscatedXiRShares[shareCount].GetHorizontalVector(n));
+                }
 
-                similarityMatrix = Protocols.CalcSimilarityMatrix(R_ks, D, directoryName);
-            }
+                double Wnm = Protocols.MultiplySharesByVector(XiRnShares, sm);
 
-            if (saveToFile)
-            {
-                trainingUserItemMatrix.SaveToFile(directoryName + "trainingUserItemMatrix.txt");
-                testingUserItemMatrix.SaveToFile(directoryName + "testingUserItemMatrix.txt");
-                similarityMatrix.SaveToFile(directoryName + "similarityMatrix.txt");
+                double[] multVector = new double[averageRatings.Length];
+                for (int i = 0; i < multVector.Length; i++)
+                {
+                    multVector[i] = sm[i] * averageRatings[i];
+                }
+                double Vnm = Protocols.MultiplySharesByVector(XiRnShares, multVector);
+
+                double predictedRating = averageRatings[m];
+                if (Wnm != 0)
+                {
+                    var addon = ((Unm - Vnm) / Wnm);
+                    predictedRating += addon;
+                }
+
+                var expected = Protocols.GetPredictedRatingNoCrypto(trainingUserItemMatrix, n, m, q);
+                predictedRating = (int)Math.Round(predictedRating, 0);
+
+                if (predictedRating > 5)
+                {
+                    predictedRating = 5;
+                }
+                else if (predictedRating < 0)
+                {
+                    predictedRating = 0;
+                }
+
+                if (predictedRating != expected)
+                {
+                    Console.WriteLine("123");
+                }
+
+                double diff = Math.Abs(userItemMatrix[n, m] - predictedRating);
+                Console.WriteLine(diff);
             }
 
             #endregion
@@ -202,7 +267,7 @@ namespace SecretSharing
 
             var obfuscationWatch = System.Diagnostics.Stopwatch.StartNew();
 
-            obfuscatedXiRShares = Protocols.ObfuscateShares(XiRShares);
+            obfuscatedXiRShares = Protocols.ObfuscateSharesOld(XiRShares);
 
             obfuscationWatch.Stop();
             var obfuscationTime = new TimeSpan(0, 0, 0, 0, (int)obfuscationWatch.ElapsedMilliseconds);

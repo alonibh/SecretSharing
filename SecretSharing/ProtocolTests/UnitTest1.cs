@@ -2,12 +2,90 @@ using SecretSharing;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 using Xunit;
 
 namespace ProtocolTests
 {
     public class UnitTest1
     {
+        [Fact]
+        public void TestPredictRating()
+        {
+            // ARRANGE
+            int k = 2;
+            int D = 5;
+            int M = 3;
+            int q = 80;
+
+            int n = 1;
+            int m = 1;
+
+            var userItemMatrix = new int[3, 3] { { 1, 2, 3 }, { 4, 0, 5 }, { 4, 2, 1 } };
+            var R_ks = Protocols.SplitUserItemMatrixBetweenVendors(userItemMatrix, k);
+
+            SimilarityMatrixAndShares smas = Protocols.CalcSimilarityMatrix(R_ks, D, "");
+            var similarityMatrix = smas.SimilarityMatrix;
+            var RShares = smas.RShares;
+            var XiRShares = smas.XiRShares;
+
+            var obfuscatedXiRShares = Protocols.ObfuscateShares(XiRShares);
+
+            // ACT
+
+            double[] averageRatings = new double[M];
+            for (int itemIndex = 0; itemIndex < M; itemIndex++)
+            {
+                averageRatings[itemIndex] = Protocols.ComputeAverageRating(RShares, obfuscatedXiRShares, itemIndex);
+            }
+
+            var sm = Protocols.GetSimilarityVectorForTopSimilarItemsToM(similarityMatrix, m, q, true);
+
+            List<double[]> RnShares = new List<double[]>();
+            for (int shareCount = 0; shareCount < RShares.Count; shareCount++)
+            {
+                RnShares.Add(RShares[shareCount].GetHorizontalVector(n));
+            }
+            double Unm = Protocols.MultiplySharesByVector(RnShares, sm);
+
+            List<double[]> XiRnShares = new List<double[]>();
+            for (int shareCount = 0; shareCount < RShares.Count; shareCount++)
+            {
+                XiRnShares.Add(obfuscatedXiRShares[shareCount].GetHorizontalVector(n));
+            }
+
+            double Wnm = Protocols.MultiplySharesByVector(XiRnShares, sm);
+
+            double[] multVector = new double[averageRatings.Length];
+            for (int i = 0; i < multVector.Length; i++)
+            {
+                multVector[i] = sm[i] * averageRatings[i];
+            }
+            double Vnm = Protocols.MultiplySharesByVector(XiRnShares, multVector);
+
+            double predictedRating = averageRatings[m];
+            if (Wnm != 0)
+            {
+                var addon = ((Unm - Vnm) / Wnm);
+                predictedRating += addon;
+            }
+
+            predictedRating = (int)Math.Round(predictedRating, 0);
+
+            if (predictedRating > 5)
+            {
+                predictedRating = 5;
+            }
+            else if (predictedRating < 0)
+            {
+                predictedRating = 0;
+            }
+
+            // ASSERT
+            var expected = Protocols.GetPredictedRatingNoCrypto(userItemMatrix, n, m, q);
+            Assert.Equal(expected, predictedRating);
+        }
+
         [Fact]
         public void TestAONSecretSharingAndReconstruction()
         {
@@ -55,7 +133,7 @@ namespace ProtocolTests
             //ACT
             var R_ks = Protocols.SplitUserItemMatrixBetweenVendors(userItemMatrix, 2);
 
-            var similarityMatrix = Protocols.CalcSimilarityMatrix(R_ks, 3, "");
+            var similarityMatrix = Protocols.CalcSimilarityMatrix(R_ks, 3, "").SimilarityMatrix;
             var similarityMatrixNoCrypto = Protocols.CalcSimilarityMatrixNoCrypto(userItemMatrix);
 
             //ASSERT
@@ -92,7 +170,7 @@ namespace ProtocolTests
             //ACT
             var R_ks = Protocols.SplitUserItemMatrixBetweenVendors(userItemMatrix, 2);
 
-            var similarityMatrix = Protocols.CalcSimilarityMatrix(R_ks, 5, "");
+            var similarityMatrix = Protocols.CalcSimilarityMatrix(R_ks, 5, "").SimilarityMatrix;
             var similarityMatrixNoCrypto = Protocols.CalcSimilarityMatrixNoCrypto(userItemMatrix);
 
             //ASSERT
@@ -129,7 +207,7 @@ namespace ProtocolTests
             //ACT
             var R_ks = Protocols.SplitUserItemMatrixBetweenVendors(userItemMatrix, 2);
 
-            var similarityMatrix = Protocols.CalcSimilarityMatrix(R_ks, 7, "");
+            var similarityMatrix = Protocols.CalcSimilarityMatrix(R_ks, 7, "").SimilarityMatrix;
             var similarityMatrixNoCrypto = Protocols.CalcSimilarityMatrixNoCrypto(userItemMatrix);
 
             //ASSERT
@@ -137,6 +215,34 @@ namespace ProtocolTests
             var similarityScore = (2 * 5 + 3 * 4) / Math.Sqrt((4 + 9) * (25 + 16));
             var integeredSimilarityScore = (double)Math.Floor((similarityScore * Q) + 0.5);
             Assert.Equal(integeredSimilarityScore, similarityMatrix[0, 1]);
+        }
+
+        [Fact]
+        public void TestShamirReconstruction()
+        {
+            // ARRANGE
+            double[] vector = new double[1] { 9 };
+            var shares = Protocols.ShamirSecretSharing(vector, 5);
+            List<BigInteger> coordinates = new List<BigInteger>();
+            foreach (var share in shares)
+            {
+                coordinates.Add((BigInteger)share[0]);
+            }
+
+            // ACT
+            double secret = 0;
+            if (coordinates.Count == 5)
+            {
+                secret = (double)(((5 * (coordinates[0] - coordinates[3])) - (10 * (coordinates[1] - coordinates[2])) + coordinates[4]) % (BigInteger)Protocols.PRIME);
+            }
+
+            if (secret < 0)
+            {
+                secret += Protocols.PRIME;
+            }
+
+            // ASSERT
+            Assert.Equal(vector[0], secret);
         }
 
         [Fact]
@@ -198,15 +304,49 @@ namespace ProtocolTests
         }
 
         [Fact]
+        public void TestAverageRating()
+        {
+            // ARRANGE
+            int?[,] matrix = new int?[5, 1] { { 0 }, { 1 }, { 2 }, { 3 }, { 4 } };
+            int?[,] xiMatrix = new int?[5, 1] { { 0 }, { 1 }, { 1 }, { 1 }, { 1 } };
+            double realAverage = 2.5;
+            var RShares = Protocols.ShamirSecretSharingMatrix(matrix, 3);
+            var xiRShares = Protocols.ShamirSecretSharingMatrix(xiMatrix, 3);
+
+            // ACT
+            double average = Protocols.ComputeAverageRating(RShares, xiRShares, 0);
+
+            // ASSERT
+            Assert.Equal(realAverage, average);
+        }
+
+        [Fact]
+        public void TestVectorObfuscation()
+        {
+            // ARRANGE
+            int?[,] matrix = new int?[3, 3] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } };
+            var shares = Protocols.ShamirSecretSharingMatrix(matrix, 5);
+            var cm = matrix.GetVerticalVector(0).Select(o => (double)o).ToArray();
+            var cl = matrix.GetVerticalVector(1).Select(o => (double)o).ToArray();
+            var scalarProduct = Protocols.ScalarProductVectors(cm, cl);
+
+            // ACT
+            var ObfuscatedShares = Protocols.ObfuscateShares(shares);
+            var cmShares = ObfuscatedShares.Select(o => o.GetVerticalVector(0)).ToList();
+            var clShares = ObfuscatedShares.Select(o => o.GetVerticalVector(1)).ToList();
+            var actualScalarProduct = Protocols.ScalarProductShares(cmShares, clShares);
+
+            // ASSERT
+            Assert.Equal(scalarProduct, actualScalarProduct);
+        }
+
+        [Fact]
         public void TestVectorObfuscationSum()
         {
             // ARRANGE
             int D = 5;
             int[,] userItemMatrix = new int[2, 3] { { 2, 5, 3 }, { 3, 4, 5 } };
             int[] itemsVendorIndex = new int[3] { 0, 1, 2 };
-
-
-            double[,] similarityMatrix = Protocols.CalcSimilarityMatrixOld(userItemMatrix, D, itemsVendorIndex);
 
             var XiRShares = Protocols.SecretShareXiR(userItemMatrix, D);
 
@@ -219,7 +359,7 @@ namespace ProtocolTests
 
             // ACT
 
-            List<double[]>[] ObfuscatedXiRShares = Protocols.ObfuscateShares(XiRShares);
+            List<double[]>[] ObfuscatedXiRShares = Protocols.ObfuscateSharesOld(XiRShares);
 
 
             double sum2 = 0;
@@ -266,7 +406,7 @@ namespace ProtocolTests
             var RHatShares = Protocols.SecretShareRHat(userItemMatrix, D);
             var XiRShares = Protocols.SecretShareXiR(userItemMatrix, D);
 
-            List<double[]>[] ObfuscatedXiRShares = Protocols.ObfuscateShares(XiRShares);
+            List<double[]>[] ObfuscatedXiRShares = Protocols.ObfuscateSharesOld(XiRShares);
 
 
             var sm = Protocols.GetSimilarityVectorForTopSimilarItemsToM(similarityMatrix, m, q, true);
@@ -357,7 +497,7 @@ namespace ProtocolTests
             // ACT
 
             var XiRShares = Protocols.SecretShareXiR(userItemMatrix, D);
-            var obfuscatedXiRShares = Protocols.ObfuscateShares(XiRShares);
+            var obfuscatedXiRShares = Protocols.ObfuscateSharesOld(XiRShares);
 
             double[] x = new double[numOfItems];
             double[] y = new double[numOfItems];
@@ -439,10 +579,13 @@ namespace ProtocolTests
                     for (int j = 0; j < M; j++)
                     {
                         if (sum[i, j] == null)
+                        {
                             sum[i, j] = R_k[i, j];
+                        }
                         else if (R_k[i, j] != null)
+                        {
                             sum[i, j] += R_k[i, j];
-
+                        }
                     }
                 }
             }

@@ -100,7 +100,7 @@ namespace SecretSharing
             return R_ks;
         }
 
-        public static double[,] CalcSimilarityMatrix(List<int?[,]> R_ks, int numOfMediators, string directoryName)
+        public static SimilarityMatrixAndShares CalcSimilarityMatrix(List<int?[,]> R_ks, int numOfMediators, string directoryName)
         {
             int N = R_ks[0].GetLength(0);
             int M = R_ks[0].GetLength(1);
@@ -127,11 +127,11 @@ namespace SecretSharing
 
                 for (int mediatorIndex = 0; mediatorIndex < numOfMediators; mediatorIndex++)
                 {
-                    RShares[mediatorIndex].AddShare(RkShares[mediatorIndex]);
+                    RShares[mediatorIndex] = RShares[mediatorIndex].AddShare(RkShares[mediatorIndex]);
 
-                    SqRShares[mediatorIndex].AddShare(SqRkShares[mediatorIndex]);
+                    SqRShares[mediatorIndex] = SqRShares[mediatorIndex].AddShare(SqRkShares[mediatorIndex]);
 
-                    XiRShares[mediatorIndex].AddShare(XiRkShares[mediatorIndex]);
+                    XiRShares[mediatorIndex] = XiRShares[mediatorIndex].AddShare(XiRkShares[mediatorIndex]);
                 }
             }
 
@@ -202,7 +202,66 @@ namespace SecretSharing
                 });
             }
 
-            return similarityMatrix;
+            return new SimilarityMatrixAndShares
+            {
+                SimilarityMatrix = similarityMatrix,
+                RShares = RShares,
+                SqRShares = SqRShares,
+                XiRShares = XiRShares
+            };
+        }
+
+        public static double MultiplySharesByVector(List<double[]> shares, double[] vector)
+        {
+            List<BigInteger> xds = new List<BigInteger>();
+            foreach (var share in shares)
+            {
+                double xd = 0;
+                for (int itemCounter = 0; itemCounter < vector.Length; itemCounter++)
+                {
+                    xd += share[itemCounter] * vector[itemCounter];
+                }
+                xd = Math.Round(xd, 0);
+                xds.Add((BigInteger)xd);
+            }
+
+            var secret = ReconstructShamirSecret(xds);
+
+            return secret;
+        }
+
+        public static double ComputeAverageRating(List<double[,]> RShares, List<double[,]> XiRShares, int m)
+        {
+            List<double> Xds = new List<double>();
+            foreach (var share in RShares)
+            {
+                Xds.Add(share.GetVerticalVector(m).Sum());
+            }
+
+            List<double> Yds = new List<double>();
+            foreach (var share in XiRShares)
+            {
+                Yds.Add(share.GetVerticalVector(m).Sum());
+            }
+
+            List<BigInteger> xCoordinates = new List<BigInteger>();
+
+            foreach (var xd in Xds)
+            {
+                xCoordinates.Add((BigInteger)xd);
+            }
+            var x = ReconstructShamirSecret(xCoordinates);
+
+            List<BigInteger> yCoordinates = new List<BigInteger>();
+            foreach (var yd in Yds)
+            {
+                yCoordinates.Add((BigInteger)yd);
+            }
+            var y = ReconstructShamirSecret(yCoordinates);
+
+            if (y == 0)
+                return 0;
+            return x / y;
         }
 
         public static List<double[]> AllOrNothingSecretSharing(double[] vector, int numOfShares)
@@ -257,6 +316,7 @@ namespace SecretSharing
             {
                 sum += vector1[i] * vector2[i];
             }
+
             return sum % PRIME;
         }
 
@@ -398,6 +458,30 @@ namespace SecretSharing
             return shares;
         }
 
+        public static double ReconstructShamirSecret(List<BigInteger> coordinates)
+        {
+            double secret = 0;
+            if (coordinates.Count == 3)
+            {
+                secret = (double)((3 * (coordinates[0] - coordinates[1]) + coordinates[2]) % (BigInteger)PRIME);
+            }
+            else if (coordinates.Count == 5)
+            {
+                secret = (double)(((5 * (coordinates[0] - coordinates[3])) - (10 * (coordinates[1] - coordinates[2])) + coordinates[4]) % (BigInteger)PRIME);
+            }
+            else if (coordinates.Count == 7)
+            {
+                secret = (double)(((7 * (coordinates[0] - coordinates[5])) + (21 * (coordinates[4] - coordinates[1])) + (35 * (coordinates[2] - coordinates[3])) + coordinates[6]) % (BigInteger)PRIME);
+            }
+
+            if (secret < 0)
+            {
+                secret += PRIME;
+            }
+
+            return secret;
+        }
+
         /// <summary>
         /// Shamir's secret sharing specific for the case of 3/5/7 shares 
         /// </summary>
@@ -409,7 +493,7 @@ namespace SecretSharing
         {
             var shares = new List<double[,]>();
             int N = matrix.GetLength(0);
-            int M = matrix.GetLength(0);
+            int M = matrix.GetLength(1);
 
             for (int i = 0; i < numOfShares; i++)
             {
@@ -629,24 +713,7 @@ namespace SecretSharing
                 coordinates.Add(sumY);
             }
 
-            double secret = 0;
-            if (coordinates.Count == 3)
-            {
-                secret = (double)((3 * (coordinates[0] - coordinates[1]) + coordinates[2]) % (BigInteger)PRIME);
-            }
-            else if (coordinates.Count == 5)
-            {
-                secret = (double)(((5 * (coordinates[0] - coordinates[3])) - (10 * (coordinates[1] - coordinates[2])) + coordinates[4]) % (BigInteger)PRIME);
-            }
-            else if (coordinates.Count == 7)
-            {
-                secret = (double)(((7 * (coordinates[0] - coordinates[5])) + (21 * (coordinates[4] - coordinates[1])) + (35 * (coordinates[2] - coordinates[3])) + coordinates[6]) % (BigInteger)PRIME);
-            }
-
-            if (secret < 0)
-            {
-                secret += PRIME;
-            }
+            var secret = ReconstructShamirSecret(coordinates);
 
             return secret;
         }
@@ -954,11 +1021,41 @@ namespace SecretSharing
         }
 
         /// <summary>
+        /// Obfuscate the values of the shares according to Protocol 3
+        /// </summary>
+        /// <param name="xiRShares"></param>
+        /// <returns></returns>
+        public static List<double[,]> ObfuscateShares(List<double[,]> shares)
+        {
+            List<double[,]> obfescatedShares = new List<double[,]>();
+            int N = shares[0].GetLength(0);
+            int M = shares[0].GetLength(1);
+
+            int?[,] zeroedMatrix = new int?[N, M];
+            for (int i = 0; i < N; i++)
+            {
+                for (int j = 0; j < M; j++)
+                {
+                    zeroedMatrix[i, j] = 0;
+                }
+            }
+
+            var R0 = ShamirSecretSharingMatrix(zeroedMatrix, shares.Count);
+
+            for (int shareIndex = 0; shareIndex < shares.Count; shareIndex++)
+            {
+                obfescatedShares.Add(shares[shareIndex].AddShare(R0[shareIndex]));
+            }
+
+            return obfescatedShares;
+        }
+
+        /// <summary>
         /// Obfuscate the values of the shares according to Protocol 4
         /// </summary>
         /// <param name="xiRShares"></param>
         /// <returns></returns>
-        public static List<double[]>[] ObfuscateShares(List<double[]>[] shares)
+        public static List<double[]>[] ObfuscateSharesOld(List<double[]>[] shares)
         {
             int numOfShares = shares.Length;
             int users = shares[0][0].Length;
@@ -1033,7 +1130,6 @@ namespace SecretSharing
 
         public static int GetPredictedRatingNoCrypto(int[,] userItemMatrix, int n, int m, int q, double[,] similarityMatrixNoCrypto = null)
         {
-
             var averageRatings = userItemMatrix.GetAverageRatings();
             var averageRating = averageRatings[m];
 

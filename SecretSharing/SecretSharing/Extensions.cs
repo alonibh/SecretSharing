@@ -160,6 +160,17 @@ namespace SecretSharing
             return vector;
         }
 
+        public static int?[] GetVerticalVector(this int?[,] matrix, int index)
+        {
+            int length = matrix.GetLength(0);
+            int?[] vector = new int?[length];
+            for (int i = 0; i < length; i++)
+            {
+                vector[i] = matrix[i, index];
+            }
+            return vector;
+        }
+
         public static int[] SetVerticalVector(this int[,] matrix, int[] vector, int index)
         {
             int length = matrix.GetLength(0);
@@ -169,6 +180,7 @@ namespace SecretSharing
             }
             return vector;
         }
+        
         public static double[] GetVerticalVector(this double[,] matrix, int index)
         {
             int length = matrix.GetLength(0);
@@ -176,6 +188,17 @@ namespace SecretSharing
             for (int i = 0; i < length; i++)
             {
                 vector[i] = matrix[i, index];
+            }
+            return vector;
+        }
+
+        public static double[] GetHorizontalVector(this double[,] matrix, int index)
+        {
+            int length = matrix.GetLength(1);
+            double[] vector = new double[length];
+            for (int i = 0; i < length; i++)
+            {
+                vector[i] = matrix[index, i];
             }
             return vector;
         }
@@ -551,18 +574,21 @@ namespace SecretSharing
             return xi;
         }
 
-        public static void AddShare(this double[,] matrix, double[,] share)
+        public static double[,] AddShare(this double[,] matrix, double[,] share)
         {
             int N = matrix.GetLength(0);
             int M = matrix.GetLength(1);
+            double[,] sumMatrix = new double[N, M];
 
             for (int i = 0; i < N; i++)
             {
                 for (int j = 0; j < M; j++)
                 {
-                    matrix[i, j] += share[i, j];
+                    sumMatrix[i, j] = matrix[i, j] + share[i, j];
                 }
             }
+
+            return sumMatrix;
         }
 
         public static void CopySubMatrix(this int[,] matrix, int[,] subMatrix, int verticalIndexStart)
