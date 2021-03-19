@@ -56,12 +56,7 @@ namespace ProtocolTests
 
             double Wnm = Protocols.MultiplySharesByVector(XiRnShares, sm);
 
-            double[] multVector = new double[averageRatings.Length];
-            for (int i = 0; i < multVector.Length; i++)
-            {
-                multVector[i] = sm[i] * averageRatings[i];
-            }
-            double Vnm = Protocols.MultiplySharesByVector(XiRnShares, multVector);
+            double Vnm = Protocols.CalcVnm(XiRnShares, sm, averageRatings);
 
             double predictedRating = averageRatings[m];
             if (Wnm != 0)

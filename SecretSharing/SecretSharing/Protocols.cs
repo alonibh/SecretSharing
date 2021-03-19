@@ -211,6 +211,18 @@ namespace SecretSharing
             };
         }
 
+        public static double CalcVnm(List<double[]> XiRnShares, double[] sm, double[] averageRatings)
+        {
+            double[] cl = new double[averageRatings.Length];
+            for (int i = 0; i < cl.Length; i++)
+            {
+                cl[i] = Math.Round(Q * sm[i] * averageRatings[i],0);
+            }
+            double Vnm = MultiplySharesByVector(XiRnShares, cl) / Q;
+
+            return Vnm;
+        }
+
         public static double MultiplySharesByVector(List<double[]> shares, double[] vector)
         {
             List<BigInteger> xds = new List<BigInteger>();
