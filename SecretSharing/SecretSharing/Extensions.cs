@@ -180,7 +180,7 @@ namespace SecretSharing
             }
             return vector;
         }
-        
+
         public static double[] GetVerticalVector(this double[,] matrix, int index)
         {
             int length = matrix.GetLength(0);
@@ -329,6 +329,25 @@ namespace SecretSharing
             }
 
             return xiVector;
+        }
+
+        public static (int, int) GetFirstNotNullEntry(this int?[,] matrix)
+        {
+            int N = matrix.GetLength(0);
+            int M = matrix.GetLength(1);
+
+            for (int i = 0; i < N; i++)
+            {
+                for (int j = 0; j < M; j++)
+                {
+                    if (matrix[i, j] != null)
+                    {
+                        return (i, j);
+                    }
+                }
+            }
+
+            throw new Exception("Vendor does not offer any items");
         }
 
         public static void SaveToFile(this double[,] matrix, string path)
@@ -551,7 +570,9 @@ namespace SecretSharing
                 for (int j = 0; j < M; j++)
                 {
                     if (matrix[i, j] != null)
+                    {
                         sq[i, j] = (int?)Math.Pow(matrix[i, j].Value, 2);
+                    }
                 }
             }
             return sq;
@@ -568,7 +589,9 @@ namespace SecretSharing
                 for (int j = 0; j < M; j++)
                 {
                     if (matrix[i, j] != null)
+                    {
                         xi[i, j] = matrix[i, j].Value == 0 ? 0 : 1;
+                    }
                 }
             }
             return xi;

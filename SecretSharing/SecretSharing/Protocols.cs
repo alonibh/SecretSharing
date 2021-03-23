@@ -94,13 +94,15 @@ namespace SecretSharing
                     int i = r.Next(0, N);
                     int j = r.Next(0, M);
                     if (R_ks[vendorIndex][i, j] == null)
+                    {
                         R_ks[vendorIndex][i, j] = 0;
+                    }
                 }
             }
             return R_ks;
         }
 
-        public static SimilarityMatrixAndShares CalcSimilarityMatrix(List<int?[,]> R_ks, int numOfMediators, string directoryName)
+        public static SimilarityMatrixAndShares CalcSimilarityMatrix(List<int?[,]> R_ks, int numOfMediators)
         {
             int N = R_ks[0].GetLength(0);
             int M = R_ks[0].GetLength(1);
@@ -211,12 +213,57 @@ namespace SecretSharing
             };
         }
 
+        public static BigInteger[] GenerateXd(int q, int[] offeredItemIndecis, double[,] similarityMatrix, double[] xiRShareVector)
+        {
+            List<BigInteger> Xd = new List<BigInteger>();
+            List<double> XdShares = new List<double>();
+            List<double> oneMinusXiShares = new List<double>();
+            double addon = Q * q + 1;
+            foreach (var itemIndex in offeredItemIndecis)
+            {
+                double Xdm = addon;
+                double[] topItemsSimilarityVector = GetSimilarityVectorForTopSimilarItemsToM(similarityMatrix, itemIndex, q, false);
+                Xdm += ScalarProductVectors(topItemsSimilarityVector, xiRShareVector);
+                XdShares.Add(Xdm);
+                oneMinusXiShares.Add(1 - xiRShareVector[itemIndex]);
+            }
+
+            for (int i = 0; i < XdShares.Count; i++)
+            {
+                var mult = (BigInteger)XdShares[i] * (BigInteger)oneMinusXiShares[i];
+                var mod = ModForNegative(mult);
+                Xd.Add(mod);
+            }
+
+            return Xd.ToArray();
+        }
+
+        public static int[] GetItemsOfferedByVendor(int?[,] Rk)
+        {
+            List<int> itemIndecis = new List<int>();
+            int N = Rk.GetLength(0);
+            int M = Rk.GetLength(1);
+            for (int itemIndex = 0; itemIndex < M; itemIndex++)
+            {
+                var itemRatings = Rk.GetVerticalVector(itemIndex);
+                for (int userIndex = 0; userIndex < N; userIndex++)
+                {
+                    if (itemRatings[userIndex] != null)
+                    {
+                        itemIndecis.Add(itemIndex);
+                        break;
+                    }
+                }
+            }
+            return itemIndecis.ToArray();
+        }
+
         public static double CalcVnm(List<double[]> XiRnShares, double[] sm, double[] averageRatings)
         {
             double[] cl = new double[averageRatings.Length];
             for (int i = 0; i < cl.Length; i++)
             {
-                cl[i] = Math.Round(Q * sm[i] * averageRatings[i],0);
+                cl[i] = Math.Round(Q * sm[i] * averageRatings[i], 0);
             }
             double Vnm = MultiplySharesByVector(XiRnShares, cl) / Q;
 
@@ -272,7 +319,10 @@ namespace SecretSharing
             var y = ReconstructShamirSecret(yCoordinates);
 
             if (y == 0)
+            {
                 return 0;
+            }
+
             return x / y;
         }
 
@@ -693,7 +743,7 @@ namespace SecretSharing
         }
 
         /// <summary>
-        /// Protocol 1 - Computing the scalar product between two vectors that are shared between D mediators
+        /// Protocol 2 - Computing the scalar product between two vectors that are shared between D mediators
         /// </summary>
         /// <param name="clShares"></param>
         /// <param name="cmShares"></param>
@@ -731,7 +781,7 @@ namespace SecretSharing
         }
 
         /// <summary>
-        /// Calculates the similarity matrix based on Protocol 2, and convert it to big integers
+        /// Calculates the similarity matrix based on Protocol 1, and convert it to big integers
         /// </summary>
         /// <param name="userItemMatrix">The user-item matrix</param>
         /// <param name="numOfShares">D</param>
@@ -1033,7 +1083,7 @@ namespace SecretSharing
         }
 
         /// <summary>
-        /// Obfuscate the values of the shares according to Protocol 3
+        /// Obfuscate the values of the shares according to Protocol 3 - removed
         /// </summary>
         /// <param name="xiRShares"></param>
         /// <returns></returns>
@@ -1212,6 +1262,12 @@ namespace SecretSharing
             }
 
             return coeffs;
+        }
+
+        public static BigInteger ModForNegative(BigInteger x)
+        {
+            BigInteger prime = (BigInteger)PRIME;
+            return (x % prime + prime) % prime;
         }
     }
 

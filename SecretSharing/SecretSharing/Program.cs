@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Numerics;
 using System.Threading.Tasks;
 
 namespace SecretSharing
@@ -11,14 +12,13 @@ namespace SecretSharing
         static void Main()
         {
             string dataset = "test";
-            
+
             // k - vendors
             // D - mediators
             int q = 80; // num of similar items
             int h = 20; // num of most recomended items to take
 
-            RunTest(dataset, k: 2, D: 5, q, h, percentOfFakeCells: 5);
-
+            RunTest(dataset, k: 2, D: 3, q, h, percentOfFakeCells: 5);
 
             //RunTestOldVersion(dataset, k: 2, D: 5, q, h, percentOfFakeCells: 5);
             //RunTestOldVersion(dataset, k: 2, D: 3, q, h, percentOfFakeCells: 5);
@@ -31,10 +31,6 @@ namespace SecretSharing
         {
             #region Settings
 
-            bool loadFromFile = false;
-            bool saveToFile = false;
-            bool predictRating = true;
-            bool predictRanking = true;
 
             int[,] userItemMatrix = Protocols.ReadUserItemMatrix($"ratings-distict-{dataset}.dat");
 
@@ -45,9 +41,6 @@ namespace SecretSharing
             {
                 throw new Exception("Number of mediators must be 3 or 5");
             }
-
-            string directoryName = $"k-{k}, D-{D}, Dataset-{dataset}/";
-            Directory.CreateDirectory(directoryName);
 
             #endregion
 
@@ -69,29 +62,22 @@ namespace SecretSharing
 
             R_ks = Protocols.SplitUserItemMatrixBetweenVendors(trainingUserItemMatrix, k);
 
-            SimilarityMatrixAndShares smas = Protocols.CalcSimilarityMatrix(R_ks, D, directoryName);
+            SimilarityMatrixAndShares smas = Protocols.CalcSimilarityMatrix(R_ks, D);
             similarityMatrix = smas.SimilarityMatrix;
             RShares = smas.RShares;
             SqRShare = smas.SqRShares;
             XiRShares = smas.XiRShares;
 
-
             #endregion
 
-            #region Obfuscate the shares of XiRd (Protocol 3)
-
-            var obfuscatedXiRShares = Protocols.ObfuscateShares(XiRShares);
-
-            #endregion
-
-            #region Predict rating (Protocol 6)
+            #region Predict rating
 
             var entriesToCompare = testingUserItemMatrix.GetNonZeroEntries();
 
             double[] averageRatings = new double[M];
             for (int itemIndex = 0; itemIndex < M; itemIndex++)
             {
-                averageRatings[itemIndex] = Protocols.ComputeAverageRating(RShares, obfuscatedXiRShares, itemIndex);
+                averageRatings[itemIndex] = Protocols.ComputeAverageRating(RShares, XiRShares, itemIndex);
             }
 
             foreach (var entry in entriesToCompare)
@@ -111,7 +97,7 @@ namespace SecretSharing
                 List<double[]> XiRnShares = new List<double[]>();
                 for (int shareCount = 0; shareCount < RShares.Count; shareCount++)
                 {
-                    XiRnShares.Add(obfuscatedXiRShares[shareCount].GetHorizontalVector(n));
+                    XiRnShares.Add(XiRShares[shareCount].GetHorizontalVector(n));
                 }
 
                 double Wnm = Protocols.MultiplySharesByVector(XiRnShares, sm);
@@ -137,14 +123,44 @@ namespace SecretSharing
                     predictedRating = 0;
                 }
 
-                if (predictedRating != expected)
-                {
-                    Console.WriteLine("123");
-                }
-
                 double diff = Math.Abs(userItemMatrix[n, m] - predictedRating);
-                Console.WriteLine(diff);
+                //Console.WriteLine(diff);
             }
+
+            #endregion
+
+            #region Predict ranking (Protocol 3)
+
+            int selectedVendor = 0;
+            int selectedUser = R_ks[selectedVendor].GetFirstNotNullEntry().Item1;
+
+            int[] offeredItemIndecis = Protocols.GetItemsOfferedByVendor(R_ks[selectedVendor]);
+
+            List<BigInteger[]> Xs = new List<BigInteger[]>();
+            for (int mediatorIndex = 0; mediatorIndex < D; mediatorIndex++)
+            {
+                var xiRShareVector = XiRShares[mediatorIndex].GetHorizontalVector(selectedUser);
+                var Xd = Protocols.GenerateXd(q, offeredItemIndecis, similarityMatrix, xiRShareVector);
+                Xs.Add(Xd);
+            }
+
+            List<double> scores = new List<double>();
+            foreach (var itemIndex in offeredItemIndecis)
+            {
+                var score = Protocols.ReconstructShamirSecret(Xs.Select(o => o[itemIndex]).ToList());
+                scores.Add(score);
+            }
+
+
+            List<Tuple<double, int>> valueAndIndex = new List<Tuple<double, int>>();
+            foreach (var index in offeredItemIndecis)
+            {
+                valueAndIndex.Add(new Tuple<double, int>(scores[index], index));
+            }
+
+            var valueAndIndexArray = valueAndIndex.ToArray();
+            Array.Sort(valueAndIndexArray, new ScoreAndIndexComparer());
+            int[] mostRecommendedItems = valueAndIndexArray.Take(h).Select(o => o.Item2).ToArray();
 
             #endregion
         }

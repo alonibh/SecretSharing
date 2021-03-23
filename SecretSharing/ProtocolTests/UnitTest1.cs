@@ -24,19 +24,17 @@ namespace ProtocolTests
             var userItemMatrix = new int[3, 3] { { 1, 2, 3 }, { 4, 0, 5 }, { 4, 2, 1 } };
             var R_ks = Protocols.SplitUserItemMatrixBetweenVendors(userItemMatrix, k);
 
-            SimilarityMatrixAndShares smas = Protocols.CalcSimilarityMatrix(R_ks, D, "");
+            SimilarityMatrixAndShares smas = Protocols.CalcSimilarityMatrix(R_ks, D);
             var similarityMatrix = smas.SimilarityMatrix;
             var RShares = smas.RShares;
             var XiRShares = smas.XiRShares;
-
-            var obfuscatedXiRShares = Protocols.ObfuscateShares(XiRShares);
 
             // ACT
 
             double[] averageRatings = new double[M];
             for (int itemIndex = 0; itemIndex < M; itemIndex++)
             {
-                averageRatings[itemIndex] = Protocols.ComputeAverageRating(RShares, obfuscatedXiRShares, itemIndex);
+                averageRatings[itemIndex] = Protocols.ComputeAverageRating(RShares, XiRShares, itemIndex);
             }
 
             var sm = Protocols.GetSimilarityVectorForTopSimilarItemsToM(similarityMatrix, m, q, true);
@@ -51,7 +49,7 @@ namespace ProtocolTests
             List<double[]> XiRnShares = new List<double[]>();
             for (int shareCount = 0; shareCount < RShares.Count; shareCount++)
             {
-                XiRnShares.Add(obfuscatedXiRShares[shareCount].GetHorizontalVector(n));
+                XiRnShares.Add(XiRShares[shareCount].GetHorizontalVector(n));
             }
 
             double Wnm = Protocols.MultiplySharesByVector(XiRnShares, sm);
@@ -128,7 +126,7 @@ namespace ProtocolTests
             //ACT
             var R_ks = Protocols.SplitUserItemMatrixBetweenVendors(userItemMatrix, 2);
 
-            var similarityMatrix = Protocols.CalcSimilarityMatrix(R_ks, 3, "").SimilarityMatrix;
+            var similarityMatrix = Protocols.CalcSimilarityMatrix(R_ks, 3).SimilarityMatrix;
             var similarityMatrixNoCrypto = Protocols.CalcSimilarityMatrixNoCrypto(userItemMatrix);
 
             //ASSERT
@@ -165,7 +163,7 @@ namespace ProtocolTests
             //ACT
             var R_ks = Protocols.SplitUserItemMatrixBetweenVendors(userItemMatrix, 2);
 
-            var similarityMatrix = Protocols.CalcSimilarityMatrix(R_ks, 5, "").SimilarityMatrix;
+            var similarityMatrix = Protocols.CalcSimilarityMatrix(R_ks, 5).SimilarityMatrix;
             var similarityMatrixNoCrypto = Protocols.CalcSimilarityMatrixNoCrypto(userItemMatrix);
 
             //ASSERT
@@ -202,7 +200,7 @@ namespace ProtocolTests
             //ACT
             var R_ks = Protocols.SplitUserItemMatrixBetweenVendors(userItemMatrix, 2);
 
-            var similarityMatrix = Protocols.CalcSimilarityMatrix(R_ks, 7, "").SimilarityMatrix;
+            var similarityMatrix = Protocols.CalcSimilarityMatrix(R_ks, 7).SimilarityMatrix;
             var similarityMatrixNoCrypto = Protocols.CalcSimilarityMatrixNoCrypto(userItemMatrix);
 
             //ASSERT
@@ -446,6 +444,92 @@ namespace ProtocolTests
 
         [Fact]
         public void TestRankingPrediction()
+        {
+            // ARRANGE
+            int selectedUser = 0;
+            int q = 2;
+            int h = 2;
+            int D = 3;
+            int[,] userItemMatrix = new int[4, 4] { { 0, 1, 0, 0 }, { 3, 2, 5, 1 }, { 1, 3, 1, 5 }, { 4, 2, 3, 5 } };
+            var similarityMatrix = Protocols.CalcSimilarityMatrixNoCrypto(userItemMatrix);
+            var userRatings = userItemMatrix.GetHorizontalVector(selectedUser);
+            int numOfItems = userRatings.Length;
+            var sHat = new double[numOfItems];
+            int i = 0;
+
+            #region No Crypto
+
+            for (i = 0; i < numOfItems; i++)
+            {
+                if (userRatings[i] == 0) // only if this item has not been rated yet
+                {
+                    double[] similarityVectorForMostSimilarItems = Protocols.GetSimilarityVectorForTopSimilarItemsToM(similarityMatrix, i, q, false);
+                    for (int j = 0; j < numOfItems; j++)
+                    {
+                        if (similarityVectorForMostSimilarItems[j] != 0 && userRatings[j] != 0)
+                        {
+                            sHat[i] += similarityMatrix[i, j];
+                        }
+                    }
+                }
+            }
+
+            Tuple<double, int>[] sHatScoreAndIndex = new Tuple<double, int>[numOfItems];
+
+            for (i = 0; i < numOfItems; i++)
+            {
+                sHatScoreAndIndex[i] = new Tuple<double, int>(sHat[i], i);
+            }
+
+            Array.Sort(sHatScoreAndIndex, new ScoreAndIndexComparer());
+
+            var expectedMostRecommendedItems = sHatScoreAndIndex.Take(h).Select(o => o.Item2).ToArray();
+
+            #endregion
+
+            // ACT
+            int?[,] Rk = new int?[4, 4] { { 0, 1, 0, 0 }, { 3, 2, 5, 1 }, { 1, 3, 1, 5 }, { 4, 2, 3, 5 } };
+
+            SimilarityMatrixAndShares smas = Protocols.CalcSimilarityMatrix(new List<int?[,]> { Rk}, D);
+            similarityMatrix = smas.SimilarityMatrix;
+            var RShares = smas.RShares;
+            var SqRShare = smas.SqRShares;
+            var XiRShares = smas.XiRShares;
+
+            int[] offeredItemIndecis = new int[4] { 0, 1, 2, 3 };
+
+            List<BigInteger[]> Xs = new List<BigInteger[]>();
+            for (int mediatorIndex = 0; mediatorIndex < D; mediatorIndex++)
+            {
+                var xiRShareVector = XiRShares[mediatorIndex].GetHorizontalVector(selectedUser);
+                var Xd = Protocols.GenerateXd(q, offeredItemIndecis, similarityMatrix, xiRShareVector);
+                Xs.Add(Xd);
+            }
+
+            List<double> scores = new List<double>();
+            foreach (var itemIndex in offeredItemIndecis)
+            {
+                var score = Protocols.ReconstructShamirSecret(Xs.Select(o => o[itemIndex]).ToList());
+                scores.Add(score);
+            }
+
+
+            List<Tuple<double, int>> valueAndIndex = new List<Tuple<double, int>>();
+            foreach (var index in offeredItemIndecis)
+            {
+                valueAndIndex.Add(new Tuple<double, int>(scores[index], index));
+            }
+
+            var valueAndIndexArray = valueAndIndex.ToArray();
+            Array.Sort(valueAndIndexArray, new ScoreAndIndexComparer());
+            int[] mostRecommendedItems = valueAndIndexArray.Take(h).Select(o => o.Item2).ToArray();
+
+            // ASSERT
+            Assert.Equal(expectedMostRecommendedItems, mostRecommendedItems);
+        }
+
+        [Fact]
+        public void TestRankingPredictionOld()
         {
             // ARRANGE
             int selectedUser = 0;
