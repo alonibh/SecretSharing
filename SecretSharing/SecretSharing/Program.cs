@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Numerics;
@@ -11,36 +12,30 @@ namespace SecretSharing
     {
         static void Main()
         {
-            string dataset = "test";
+            string dataset = "100K"; // test, 100K, 1M, 10M
 
-            // k - vendors
-            // D - mediators
-            int q = 80; // num of similar items
-            int h = 20; // num of most recomended items to take
+            //RunTestOldVersion(dataset, k: 2, D: 3, q, h, 5);
+            MeasureOfflinePart1(dataset, k: 1, D: 3);
 
-            RunTest(dataset, k: 2, D: 3, q, h, percentOfFakeCells: 5);
-
-            //RunTestOldVersion(dataset, k: 2, D: 5, q, h, percentOfFakeCells: 5);
-            //RunTestOldVersion(dataset, k: 2, D: 3, q, h, percentOfFakeCells: 5);
-            //RunTestOldVersion(dataset, k: 5, D: 5, q, h, percentOfFakeCells: 5);
-            //RunTestOldVersion(dataset, k: 5, D: 3, q, h, percentOfFakeCells: 5);
-            //RunTestOldVersion(dataset, k: 1, D: 3, q, h, percentOfFakeCells: 5);
+            //RunTest(dataset, k: 2, D: 3, q, h);
         }
 
-        static void RunTest(string dataset, int k, int D, int q, int h, int percentOfFakeCells)
+        static void RunTest(string dataset, int k, int D, int q, int h)
         {
             #region Settings
-
 
             int[,] userItemMatrix = Protocols.ReadUserItemMatrix($"ratings-distict-{dataset}.dat");
 
             int N = userItemMatrix.GetLength(0); // users
             int M = userItemMatrix.GetLength(1); // items
 
-            if (D != 3 && D != 5 && D != 7)
+            if (D != 3 && D != 5 && D != 7 && D != 9)
             {
-                throw new Exception("Number of mediators must be 3 or 5");
+                throw new Exception("Number of mediators must be 3, 5, 7 or 9");
             }
+
+            string directoryName = $"k-{k}, D-{D}, Dataset-{dataset}/";
+            Directory.CreateDirectory(directoryName);
 
             #endregion
 
@@ -124,7 +119,6 @@ namespace SecretSharing
                 }
 
                 double diff = Math.Abs(userItemMatrix[n, m] - predictedRating);
-                //Console.WriteLine(diff);
             }
 
             #endregion
@@ -161,6 +155,45 @@ namespace SecretSharing
             var valueAndIndexArray = valueAndIndex.ToArray();
             Array.Sort(valueAndIndexArray, new ScoreAndIndexComparer());
             int[] mostRecommendedItems = valueAndIndexArray.Take(h).Select(o => o.Item2).ToArray();
+
+            #endregion
+        }
+
+        static void MeasureOfflinePart1(string dataset, int k, int D)
+        {
+            string directoryName = $"k-{k}, D-{D}, Dataset-{dataset}/";
+            string fileName = directoryName + "MeasureOfflinePart1.txt";
+            Directory.CreateDirectory(directoryName);
+            File.AppendAllLines(fileName, new string[1] { $"Database - {dataset}, k={k} D={D}" });
+
+            #region Settings
+
+            int[,] userItemMatrix = Protocols.ReadUserItemMatrix($"ratings-distict-{dataset}.dat");
+
+            int N = userItemMatrix.GetLength(0); // users
+            int M = userItemMatrix.GetLength(1); // items
+
+            if (D != 3 && D != 5 && D != 7 && D != 9)
+            {
+                throw new Exception("Number of mediators must be 3, 5, 7 or 9");
+            }
+
+            #endregion
+
+            #region Computing the similarity matrix and the shares (Protocol 1+2)
+
+            List<int?[,]> R_ks;
+
+            R_ks = Protocols.SplitUserItemMatrixBetweenVendors(userItemMatrix, k);
+
+            var res = Protocols.CalcSimilarityMatrix(R_ks, D);
+
+            Console.WriteLine($"Average runtime for vendor is {res.VendorTime.ToCustomTimeSpanFormat()}");
+            Console.WriteLine($"Average runtime for each mediator  is {res.EachMediatorTime.ToCustomTimeSpanFormat()}");
+            Console.WriteLine($"MeasureOfflinePart1, k={k}, D={D} Done");
+
+            File.AppendAllLines(fileName, new string[1] { $"Average runtime for vendor is {res.VendorTime.ToCustomTimeSpanFormat()}" });
+            File.AppendAllLines(fileName, new string[1] { $"Average runtime for each mediator  is {res.EachMediatorTime.ToCustomTimeSpanFormat()}" });
 
             #endregion
         }
@@ -260,7 +293,7 @@ namespace SecretSharing
             List<double[]>[] RHatShares = null;
             List<double[]>[] XiRShares = null;
 
-            var secretSharingWatch = System.Diagnostics.Stopwatch.StartNew();
+            var secretSharingWatch = Stopwatch.StartNew();
 
             RHatShares = Protocols.SecretShareRHat(trainingUserItemMatrix, D);
             XiRShares = Protocols.SecretShareXiR(trainingUserItemMatrix, D);
@@ -276,7 +309,7 @@ namespace SecretSharing
 
             List<double[]>[] obfuscatedXiRShares = null;
 
-            var obfuscationWatch = System.Diagnostics.Stopwatch.StartNew();
+            var obfuscationWatch = Stopwatch.StartNew();
 
             obfuscatedXiRShares = Protocols.ObfuscateSharesOld(XiRShares);
 
