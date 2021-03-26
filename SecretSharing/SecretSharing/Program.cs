@@ -13,11 +13,18 @@ namespace SecretSharing
         static void Main()
         {
             string dataset = "100K"; // test, 100K, 1M, 10M
+            // k - vendors
+            // D - mediators
+            int q = 80; // num of similar items
+            int h = 20; // num of most recomended items to take
 
-            //RunTestOldVersion(dataset, k: 2, D: 3, q, h, 5);
             MeasureOfflinePart1(dataset, k: 1, D: 3);
+            MeasureOfflinePart1(dataset, k: 1, D: 5);
+            MeasureOfflinePart1(dataset, k: 1, D: 7);
+            MeasureOfflinePart1(dataset, k: 1, D: 9);
 
             //RunTest(dataset, k: 2, D: 3, q, h);
+            //RunTestOldVersion(dataset, k: 1, D: 9, q, h, 5);
         }
 
         static void RunTest(string dataset, int k, int D, int q, int h)
@@ -161,6 +168,8 @@ namespace SecretSharing
 
         static void MeasureOfflinePart1(string dataset, int k, int D)
         {
+            Console.WriteLine($"MeasureOfflinePart1, k={k}, D={D} Started");
+
             string directoryName = $"k-{k}, D-{D}, Dataset-{dataset}/";
             string fileName = directoryName + "MeasureOfflinePart1.txt";
             Directory.CreateDirectory(directoryName);
@@ -189,11 +198,11 @@ namespace SecretSharing
             var res = Protocols.CalcSimilarityMatrix(R_ks, D);
 
             Console.WriteLine($"Average runtime for vendor is {res.VendorTime.ToCustomTimeSpanFormat()}");
-            Console.WriteLine($"Average runtime for each mediator  is {res.EachMediatorTime.ToCustomTimeSpanFormat()}");
+            Console.WriteLine($"Average runtime for each mediator is {res.EachMediatorTime.ToCustomTimeSpanFormat()}");
             Console.WriteLine($"MeasureOfflinePart1, k={k}, D={D} Done");
 
             File.AppendAllLines(fileName, new string[1] { $"Average runtime for vendor is {res.VendorTime.ToCustomTimeSpanFormat()}" });
-            File.AppendAllLines(fileName, new string[1] { $"Average runtime for each mediator  is {res.EachMediatorTime.ToCustomTimeSpanFormat()}" });
+            File.AppendAllLines(fileName, new string[1] { $"Average runtime for each mediator is {res.EachMediatorTime.ToCustomTimeSpanFormat()}" });
 
             #endregion
         }
@@ -204,17 +213,17 @@ namespace SecretSharing
 
             bool loadFromFile = false;
             bool saveToFile = false;
-            bool predictRating = true;
-            bool predictRanking = true;
+            bool predictRating = false;
+            bool predictRanking = false;
 
             int[,] userItemMatrix = Protocols.ReadUserItemMatrix($"ratings-distict-{dataset}.dat");
 
             int N = userItemMatrix.GetLength(0); // users
             int M = userItemMatrix.GetLength(1); // items
 
-            if (D != 3 && D != 5 && D != 7)
+            if (D != 3 && D != 5 && D != 7 && D != 9)
             {
-                throw new Exception("Number of mediators must be 3 or 5");
+                throw new Exception("Number of mediators must be 3, 5, 7 or 9");
             }
 
             string directoryName = $"k-{k}, D-{D}, Dataset-{dataset}/";

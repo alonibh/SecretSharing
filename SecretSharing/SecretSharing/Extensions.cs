@@ -614,6 +614,23 @@ namespace SecretSharing
             return sumMatrix;
         }
 
+        public static double[,] ApplyModulo(this double[,] matrix, double modulo)
+        {
+            int N = matrix.GetLength(0);
+            int M = matrix.GetLength(1);
+            double[,] modMatrix = new double[N, M];
+
+            for (int i = 0; i < N; i++)
+            {
+                for (int j = 0; j < M; j++)
+                {
+                    modMatrix[i, j] = matrix[i, j] % modulo;
+                }
+            }
+
+            return modMatrix;
+        }
+
         public static void CopySubMatrix(this int[,] matrix, int[,] subMatrix, int verticalIndexStart)
         {
             for (int i = 0; i < subMatrix.GetLength(0); i++)
