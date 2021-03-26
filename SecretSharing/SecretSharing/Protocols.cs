@@ -517,6 +517,72 @@ namespace SecretSharing
                 }
             }
 
+            else if (numOfShares == 9)
+            {
+                int shareCount = 0;
+                foreach (double entry in vector)
+                {
+                    double a = random.Next(2, int.MaxValue);
+                    double b = random.Next(2, int.MaxValue);
+                    double c = random.Next(2, int.MaxValue);
+                    double d = random.Next(2, int.MaxValue);
+
+                    double B = a + b + c + d;
+                    double B1 = 2 * d;
+                    double B2 = 6 * c;
+                    double B3 = 2 * b;
+                    double B5 = B + B3 + B2 + 7 * B1;
+                    double B7 = B5 + B3 + 2 * B2 + 25 * B1;
+                    double B9 = B7 + B3 + 3 * B2 + 55 * B1;
+                    double B11 = B9 + B3 + 4 * B2 + 97 * B1;
+                    double B13 = B11 + B3 + 5 * B2 + 151 * B1;
+                    double B15 = B13 + B3 + 6 * B2 + 217 * B1;
+                    double B17 = B15 + B3 + 7 * B2 + 295 * B1;
+                    double B19 = B17 + B3 + 8 * B2 + 385 * B1;
+
+                    double lastY = 0;
+
+                    for (int i = 0; i < 9; i++)
+                    {
+                        double y = 0;
+                        switch (i)
+                        {
+                            case 0:
+                                y = entry + B;
+                                break;
+                            case 1:
+                                y = lastY + B5;
+                                break;
+                            case 2:
+                                y = lastY + B7;
+                                break;
+                            case 3:
+                                y = lastY + B9;
+                                break;
+                            case 4:
+                                y = lastY + B11;
+                                break;
+                            case 5:
+                                y = lastY + B13;
+                                break;
+                            case 6:
+                                y = lastY + B15;
+                                break;
+                            case 7:
+                                y = lastY + B17;
+                                break;
+                            case 8:
+                                y = lastY + B19;
+                                break;
+                        }
+                        lastY = y;
+
+                        shares[i][shareCount] = y;
+                    }
+                    shareCount++;
+                }
+            }
+
             return shares;
         }
 
@@ -534,6 +600,10 @@ namespace SecretSharing
             else if (coordinates.Count == 7)
             {
                 secret = (double)(((7 * (coordinates[0] - coordinates[5])) + (21 * (coordinates[4] - coordinates[1])) + (35 * (coordinates[2] - coordinates[3])) + coordinates[6]) % (BigInteger)PRIME);
+            }
+            else if (coordinates.Count == 9)
+            {
+                secret = (double)(((9 * (coordinates[0] - coordinates[7])) + (36 * (coordinates[6] - coordinates[1])) + (84 * (coordinates[2] - coordinates[5])) + (126 * (coordinates[4] - coordinates[3])) + coordinates[8]) % (BigInteger)PRIME);
             }
 
             if (secret < 0)
@@ -679,6 +749,75 @@ namespace SecretSharing
                                     break;
                                 case 6:
                                     y = lastY + B13;
+                                    break;
+                            }
+                            lastY = y;
+
+                            shares[shareIndex][i, j] = y;
+                        }
+                    }
+                }
+            }
+
+            else if (numOfShares == 9)
+            {
+                for (int i = 0; i < N; i++)
+                {
+                    for (int j = 0; j < M; j++)
+                    {
+                        double entry = matrix[i, j] ?? 0;
+
+                        double a = random.Next(2, int.MaxValue);
+                        double b = random.Next(2, int.MaxValue);
+                        double c = random.Next(2, int.MaxValue);
+                        double d = random.Next(2, int.MaxValue);
+
+                        double B = a + b + c + d;
+                        double B1 = 2 * d;
+                        double B2 = 6 * c;
+                        double B3 = 2 * b;
+                        double B5 = B + B3 + B2 + 7 * B1;
+                        double B7 = B5 + B3 + 2 * B2 + 25 * B1;
+                        double B9 = B7 + B3 + 3 * B2 + 55 * B1;
+                        double B11 = B9 + B3 + 4 * B2 + 97 * B1;
+                        double B13 = B11 + B3 + 5 * B2 + 151 * B1;
+                        double B15 = B13 + B3 + 6 * B2 + 217 * B1;
+                        double B17 = B15 + B3 + 7 * B2 + 295 * B1;
+                        double B19 = B17 + B3 + 8 * B2 + 385 * B1;
+
+                        double lastY = 0;
+
+                        for (int shareIndex = 0; shareIndex < 9; shareIndex++)
+                        {
+                            double y = 0;
+                            switch (shareIndex)
+                            {
+                                case 0:
+                                    y = entry + B;
+                                    break;
+                                case 1:
+                                    y = lastY + B5;
+                                    break;
+                                case 2:
+                                    y = lastY + B7;
+                                    break;
+                                case 3:
+                                    y = lastY + B9;
+                                    break;
+                                case 4:
+                                    y = lastY + B11;
+                                    break;
+                                case 5:
+                                    y = lastY + B13;
+                                    break;
+                                case 6:
+                                    y = lastY + B15;
+                                    break;
+                                case 7:
+                                    y = lastY + B17;
+                                    break;
+                                case 8:
+                                    y = lastY + B19;
                                     break;
                             }
                             lastY = y;
