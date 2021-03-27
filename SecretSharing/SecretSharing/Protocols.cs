@@ -77,12 +77,11 @@ namespace SecretSharing
                 R_ks.Add(new int?[N, M]);
             }
 
-            Random r = new Random();
             for (int i = 0; i < N; i++)
             {
                 for (int j = 0; j < M; j++)
                 {
-                    int selectedVendor = r.Next(0, numOfVendors);
+                    int selectedVendor = random.Next(0, numOfVendors);
                     R_ks[selectedVendor][i, j] = userItemMatrix[i, j];
                 }
             }
@@ -92,8 +91,8 @@ namespace SecretSharing
             {
                 for (int lap = 0; lap < 50; lap++)
                 {
-                    int i = r.Next(0, N);
-                    int j = r.Next(0, M);
+                    int i = random.Next(0, N);
+                    int j = random.Next(0, M);
                     if (R_ks[vendorIndex][i, j] == null)
                     {
                         R_ks[vendorIndex][i, j] = 0;
@@ -122,6 +121,8 @@ namespace SecretSharing
                 XiRShares.Add(new double[N, M]);
             }
 
+            Console.WriteLine("Starting creating shares");
+
             foreach (var R_k in R_ks)
             {
                 vendorWatch.Start();
@@ -148,6 +149,8 @@ namespace SecretSharing
 
                 mediatorsWatch.Stop();
             }
+
+            Console.WriteLine("Creating shares done");
 
             double[,] similarityMatrix = new double[M, M];
             List<double[]>[] clSharesArray = new List<double[]>[M];
@@ -294,7 +297,7 @@ namespace SecretSharing
 
             var vendorPhase2Watch = Stopwatch.StartNew();
 
-            Parallel.For(0, items, (i) =>
+            for (int i = 0; i < items; i++)
             {
                 double[] cl = userItemMatrix.GetVerticalVector(i).Select(o => (double)o).ToArray();
                 var clShares = ShamirSecretSharing(cl, numOfShares);
@@ -310,7 +313,7 @@ namespace SecretSharing
 
                 Console.WriteLine($"{count}/{items}");
                 count++;
-            });
+            }
 
             vendorPhase2Watch.Stop();
             var phase2Time = new TimeSpan(0, 0, 0, 0, (int)vendorPhase2Watch.ElapsedMilliseconds);

@@ -18,13 +18,13 @@ namespace SecretSharing
             int q = 80; // num of similar items
             int h = 20; // num of most recomended items to take
 
-            MeasureOfflinePart1(dataset, k: 1, D: 3);
-            MeasureOfflinePart1(dataset, k: 1, D: 5);
-            MeasureOfflinePart1(dataset, k: 1, D: 7);
             MeasureOfflinePart1(dataset, k: 1, D: 9);
+            //MeasureOfflinePart1(dataset, k: 1, D: 3);
+            //MeasureOfflinePart1(dataset, k: 1, D: 5);
+            //MeasureOfflinePart1(dataset, k: 1, D: 7);
 
-            //RunTest(dataset, k: 2, D: 3, q, h);
             //RunTestOldVersion(dataset, k: 1, D: 9, q, h, 5);
+            //RunTest(dataset, k: 2, D: 3, q, h);
         }
 
         static void RunTest(string dataset, int k, int D, int q, int h)
