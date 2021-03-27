@@ -12,16 +12,19 @@ namespace SecretSharing
     {
         static void Main()
         {
-            string dataset = "100K"; // test, 100K, 1M, 10M
+            string[] datasets = new string[3] { "100K", "1M", "10M" }; //test
             // k - vendors
             // D - mediators
             int q = 80; // num of similar items
             int h = 20; // num of most recomended items to take
 
-            MeasureOfflinePart1(dataset, k: 1, D: 9);
-            //MeasureOfflinePart1(dataset, k: 1, D: 3);
-            //MeasureOfflinePart1(dataset, k: 1, D: 5);
-            //MeasureOfflinePart1(dataset, k: 1, D: 7);
+            foreach (var dataset in datasets)
+            {
+                MeasureOfflinePart1(dataset, k: 1, D: 3);
+                MeasureOfflinePart1(dataset, k: 1, D: 5);
+                MeasureOfflinePart1(dataset, k: 1, D: 7);
+                MeasureOfflinePart1(dataset, k: 1, D: 9);
+            }
 
             //RunTestOldVersion(dataset, k: 1, D: 9, q, h, 5);
             //RunTest(dataset, k: 2, D: 3, q, h);
@@ -168,7 +171,7 @@ namespace SecretSharing
 
         static void MeasureOfflinePart1(string dataset, int k, int D)
         {
-            Console.WriteLine($"MeasureOfflinePart1, k={k}, D={D} Started");
+            Console.WriteLine($"MeasureOfflinePart1, Dataset - {dataset}, k={k}, D={D} Started");
 
             string directoryName = $"k-{k}, D-{D}, Dataset-{dataset}/";
             string fileName = directoryName + "MeasureOfflinePart1.txt";
