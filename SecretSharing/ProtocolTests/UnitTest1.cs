@@ -694,11 +694,11 @@ namespace ProtocolTests
                 {
                     for (int j = 0; j < M; j++)
                     {
-                        if (sum[i, j] == null)
+                        if (sum[i, j] == -1)
                         {
                             sum[i, j] = R_k[i, j];
                         }
-                        else if (R_k[i, j] != null)
+                        else if (R_k[i, j] != -1)
                         {
                             sum[i, j] += R_k[i, j];
                         }
