@@ -52,7 +52,7 @@ namespace SecretSharing
             return userItemMatrix;
         }
 
-        public static (int[,], int[,]) SplitToTrainingAndTesting(this int[,] userItemMatrix) // 70/30 hard-coded
+        public static (sbyte[,], sbyte[,]) SplitToTrainingAndTesting(this sbyte[,] userItemMatrix) // 70/30 hard-coded
         {
             int numR = 0;
             int n = userItemMatrix.GetLength(0);
@@ -67,8 +67,8 @@ namespace SecretSharing
             int trainingEntriesLeft = (int)(numR * 0.7);
             int testingEntriesLeft = numR - trainingEntriesLeft;
 
-            var traingingMatrix = new int[n, m];
-            var testingMatrix = new int[n, m];
+            var traingingMatrix = new sbyte[n, m];
+            var testingMatrix = new sbyte[n, m];
 
             var random = new Random();
             for (int i = 0; i < n; i++)
@@ -154,7 +154,7 @@ namespace SecretSharing
             return vector;
         }
 
-        public static int[] SetVerticalVector(this int[,] matrix, int[] vector, int index)
+        public static T[] SetVerticalVector<T>(this T[,] matrix, T[] vector, int index)
         {
             int length = matrix.GetLength(0);
             for (int i = 0; i < length; i++)
@@ -175,7 +175,7 @@ namespace SecretSharing
             return vector;
         }
 
-        public static double[] GetAverageRatings(this int[,] userItemMatrix)
+        public static double[] GetAverageRatings(this sbyte[,] userItemMatrix)
         {
             int users = userItemMatrix.GetLength(0);
             int items = userItemMatrix.GetLength(1);
@@ -205,7 +205,7 @@ namespace SecretSharing
             return averageRatings;
         }
 
-        public static double[,] GetAdjustedUserItemMatrix(this int[,] userItemMatrix, double Q)
+        public static double[,] GetAdjustedUserItemMatrix(this sbyte[,] userItemMatrix, double Q)
         {
             int users = userItemMatrix.GetLength(0);
             int items = userItemMatrix.GetLength(1);
@@ -242,11 +242,11 @@ namespace SecretSharing
             return vector;
         }
 
-        public static int[,] GetXi(this int[,] matrix)
+        public static sbyte[,] GetXi(this sbyte[,] matrix)
         {
             int users = matrix.GetLength(0);
             int items = matrix.GetLength(1);
-            int[,] xiMatrix = new int[users, items];
+            sbyte[,] xiMatrix = new sbyte[users, items];
 
             for (int i = 0; i < users; i++)
             {
@@ -266,10 +266,10 @@ namespace SecretSharing
             return xiMatrix;
         }
 
-        public static int[] GetXi(this int[] vector)
+        public static sbyte[] GetXi(this sbyte[] vector)
         {
             int length = vector.Length;
-            int[] xiVector = new int[length];
+            sbyte[] xiVector = new sbyte[length];
 
             for (int i = 0; i < length; i++)
             {
@@ -286,7 +286,7 @@ namespace SecretSharing
             return xiVector;
         }
 
-        public static (int, int) GetFirstNotNullEntry(this int[,] matrix)
+        public static (int, int) GetFirstNotNullEntry(this sbyte[,] matrix)
         {
             int N = matrix.GetLength(0);
             int M = matrix.GetLength(1);
@@ -401,6 +401,21 @@ namespace SecretSharing
             File.WriteAllLines(path, lines);
         }
 
+        public static void SaveToFile(this sbyte[,] matrix, string path)
+        {
+            List<string> lines = new List<string>();
+            int n = matrix.GetLength(0);
+            int m = matrix.GetLength(1);
+            for (int i = 0; i < n; i++)
+            {
+                for (int j = 0; j < m; j++)
+                {
+                    lines.Add(i + " " + j + " " + matrix[i, j]);
+                }
+            }
+            File.WriteAllLines(path, lines);
+        }
+
         public static int[,] LoadIntMatrixFromFile(string path)
         {
             var lines = File.ReadAllLines(path);
@@ -419,6 +434,23 @@ namespace SecretSharing
             return matrix;
         }
 
+        public static sbyte[,] LoadSbyteMatrixFromFile(string path)
+        {
+            var lines = File.ReadAllLines(path);
+            int N = int.Parse(lines[lines.Length - 1].Split()[0]) + 1;
+            int M = int.Parse(lines[lines.Length - 1].Split()[1]) + 1;
+            sbyte[,] matrix = new sbyte[N, M];
+
+            foreach (var line in lines)
+            {
+                int n = int.Parse(line.Split()[0]);
+                int m = int.Parse(line.Split()[1]);
+                sbyte rating = sbyte.Parse(line.Split()[2]);
+                matrix[n, m] = rating;
+            }
+
+            return matrix;
+        }
         public static void SaveToFile(this double[] vector, string path)
         {
             List<string> lines = new List<string>();
@@ -444,7 +476,7 @@ namespace SecretSharing
             return vector;
         }
 
-        public static List<(int, int)> GetNonZeroEntries(this int[,] matrix)
+        public static List<(int, int)> GetNonZeroEntries(this sbyte[,] matrix)
         {
             List<(int, int)> indecis = new List<(int, int)>();
             int n = matrix.GetLength(0);
@@ -467,7 +499,7 @@ namespace SecretSharing
         /// </summary>
         /// <param name="matrix"></param>
         /// <returns></returns>
-        public static int GetAverageRating(this int[,] matrix)
+        public static int GetAverageRating(this sbyte[,] matrix)
         {
             int sum = 0;
             int n = matrix.GetLength(0);
@@ -483,9 +515,9 @@ namespace SecretSharing
             return average;
         }
 
-        public static int[,] GetVerticalSubMatrix(this int[,] matrix, int[] indecis)
+        public static sbyte[,] GetVerticalSubMatrix(this sbyte[,] matrix, int[] indecis)
         {
-            int[,] subMatrix = new int[matrix.GetLength(0), indecis.Length];
+            sbyte[,] subMatrix = new sbyte[matrix.GetLength(0), indecis.Length];
             int start = 0;
             foreach (var index in indecis)
             {
@@ -496,9 +528,9 @@ namespace SecretSharing
             return subMatrix;
         }
 
-        public static int[,] PlaceFakeCells(this int[,] matrix, int numOfCellsToPlaceFakeRating, int fakeRating)
+        public static sbyte[,] PlaceFakeCells(this sbyte[,] matrix, int numOfCellsToPlaceFakeRating, sbyte fakeRating)
         {
-            var fakeMatrix = matrix.Clone() as int[,];
+            var fakeMatrix = matrix.Clone() as sbyte[,];
             Random random = new Random();
             while (numOfCellsToPlaceFakeRating > 0)
             {
@@ -514,38 +546,38 @@ namespace SecretSharing
             return fakeMatrix;
         }
 
-        public static int[,] CalcSq(this int[,] matrix)
+        public static sbyte[,] CalcSq(this sbyte[,] matrix)
         {
             int N = matrix.GetLength(0);
             int M = matrix.GetLength(1);
 
-            int[,] sq = new int[N, M];
+            sbyte[,] sq = new sbyte[N, M];
             for (int i = 0; i < N; i++)
             {
                 for (int j = 0; j < M; j++)
                 {
                     if (matrix[i, j] != -1)
                     {
-                        sq[i, j] = (int)Math.Pow(matrix[i, j], 2);
+                        sq[i, j] = (sbyte)Math.Pow(matrix[i, j], 2);
                     }
                 }
             }
             return sq;
         }
 
-        public static int[,] CalcXi(this int[,] matrix)
+        public static sbyte[,] CalcXi(this sbyte[,] matrix)
         {
             int N = matrix.GetLength(0);
             int M = matrix.GetLength(1);
 
-            int[,] xi = new int[N, M];
+            sbyte[,] xi = new sbyte[N, M];
             for (int i = 0; i < N; i++)
             {
                 for (int j = 0; j < M; j++)
                 {
                     if (matrix[i, j] != -1)
                     {
-                        xi[i, j] = matrix[i, j] == 0 ? 0 : 1;
+                        xi[i, j] = (sbyte)(matrix[i, j] == 0 ? 0 : 1);
                     }
                 }
             }
@@ -586,7 +618,7 @@ namespace SecretSharing
             return modMatrix;
         }
 
-        public static void CopySubMatrix(this int[,] matrix, int[,] subMatrix, int verticalIndexStart)
+        public static void CopySubMatrix(this sbyte[,] matrix, sbyte[,] subMatrix, int verticalIndexStart)
         {
             for (int i = 0; i < subMatrix.GetLength(0); i++)
             {

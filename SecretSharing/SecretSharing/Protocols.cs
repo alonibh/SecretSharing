@@ -18,7 +18,7 @@ namespace SecretSharing
 
         public static readonly Random random = new Random();
 
-        public static int[,] ReadUserItemMatrix(string path)
+        public static sbyte[,] ReadUserItemMatrix(string path)
         {
             List<UserRating> ratings = new List<UserRating>();
 
@@ -36,7 +36,7 @@ namespace SecretSharing
                     {
                         UserId = int.Parse(csvTable.Rows[i][0].ToString()),
                         ItemId = int.Parse(csvTable.Rows[i][1].ToString()),
-                        Rating = int.Parse(csvTable.Rows[i][2].ToString())
+                        Rating = sbyte.Parse(csvTable.Rows[i][2].ToString())
                     });
                 }
             }
@@ -50,7 +50,7 @@ namespace SecretSharing
                     {
                         UserId = int.Parse(splitted[0]),
                         ItemId = int.Parse(splitted[1]),
-                        Rating = int.Parse(splitted[2])
+                        Rating = sbyte.Parse(splitted[2])
                     });
                 }
             }
@@ -58,7 +58,7 @@ namespace SecretSharing
             int N = ratings.Max(o => o.UserId);
             int M = ratings.Max(o => o.ItemId);
 
-            var userItemMatrix = new int[N, M];
+            var userItemMatrix = new sbyte[N, M];
             foreach (var rating in ratings)
             {
                 userItemMatrix[rating.UserId - 1, rating.ItemId - 1] = rating.Rating;
@@ -66,15 +66,15 @@ namespace SecretSharing
             return userItemMatrix;
         }
 
-        public static List<int[,]> SplitUserItemMatrixBetweenVendors(int[,] userItemMatrix, int numOfVendors)
+        public static List<sbyte[,]> SplitUserItemMatrixBetweenVendors(sbyte[,] userItemMatrix, int numOfVendors)
         {
             int N = userItemMatrix.GetLength(0);
             int M = userItemMatrix.GetLength(1);
-            List<int[,]> R_ks = new List<int[,]>();
+            List<sbyte[,]> R_ks = new List<sbyte[,]>();
 
             for (int vendorIndex = 0; vendorIndex < numOfVendors; vendorIndex++)
             {
-                var emepty = new int[N, M];
+                var emepty = new sbyte[N, M];
                 for (int i = 0; i < N; i++)
                 {
                     for (int j = 0; j < M; j++)
@@ -112,7 +112,7 @@ namespace SecretSharing
             return R_ks;
         }
 
-        public static SimilarityMatrixAndShares CalcSimilarityMatrix(List<int[,]> R_ks, int numOfMediators)
+        public static SimilarityMatrixAndShares CalcSimilarityMatrix(List<sbyte[,]> R_ks, int numOfMediators)
         {
             var mediatorsWatch = new Stopwatch();
             var vendorWatch = new Stopwatch();
@@ -137,8 +137,8 @@ namespace SecretSharing
             {
                 vendorWatch.Start();
 
-                int[,] sq = R_k.CalcSq();
-                int[,] xi = R_k.CalcXi();
+                sbyte[,] sq = R_k.CalcSq();
+                sbyte[,] xi = R_k.CalcXi();
 
                 var RkShares = ShamirSecretSharingMatrix(R_k, numOfMediators);
                 var SqRkShares = ShamirSecretSharingMatrix(sq, numOfMediators);
@@ -249,7 +249,7 @@ namespace SecretSharing
         /// <param name="userItemMatrix">The user-item matrix</param>
         /// <param name="numOfShares">D</param>
         /// <returns></returns>
-        public static double[,] CalcSimilarityMatrixOld(int[,] userItemMatrix, int numOfShares, int[] itemsVendorIndex, string directoryName = "")
+        public static double[,] CalcSimilarityMatrixOld(sbyte[,] userItemMatrix, int numOfShares, int[] itemsVendorIndex, string directoryName = "")
         {
             int k = itemsVendorIndex.Last() + 1;
             int items = userItemMatrix.GetLength(1);
@@ -398,7 +398,7 @@ namespace SecretSharing
         /// <param name="numOfSharesToMake"></param>
         /// <param name="numOfSharesForRecovery"></param>
         /// <returns>Shares matrix for each of the mediators</returns>
-        public static List<double[,]> ShamirSecretSharingMatrix(int[,] matrix, int numOfShares)
+        public static List<double[,]> ShamirSecretSharingMatrix(sbyte[,] matrix, int numOfShares)
         {
             var shares = new List<double[,]>();
             int N = matrix.GetLength(0);
@@ -873,7 +873,7 @@ namespace SecretSharing
             return Xd.ToArray();
         }
 
-        public static int[] GetItemsOfferedByVendor(int[,] Rk)
+        public static int[] GetItemsOfferedByVendor(sbyte[,] Rk)
         {
             List<int> itemIndecis = new List<int>();
             int N = Rk.GetLength(0);
@@ -1052,16 +1052,16 @@ namespace SecretSharing
         /// <param name="vendorsItemsIndecis"></param>
         /// <param name="percentOfFakeCells"></param>
         /// <returns></returns>
-        public static int[,] GetYPUserItemMatrix(int[,] trainingUserItemMatrix, List<int[]> vendorsItemsIndecis, int percentOfFakeCells)
+        public static sbyte[,] GetYPUserItemMatrix(sbyte[,] trainingUserItemMatrix, List<int[]> vendorsItemsIndecis, int percentOfFakeCells)
         {
             int N = trainingUserItemMatrix.GetLength(0); // users
             int M = trainingUserItemMatrix.GetLength(1); // items
 
-            int[,] YPPredictedRatings = new int[N, M];
+            sbyte[,] YPPredictedRatings = new sbyte[N, M];
 
             foreach (var vendorItemsIndecis in vendorsItemsIndecis)
             {
-                int[,] vendorUserItemMatrix = trainingUserItemMatrix.GetVerticalSubMatrix(vendorItemsIndecis);
+                sbyte[,] vendorUserItemMatrix = trainingUserItemMatrix.GetVerticalSubMatrix(vendorItemsIndecis);
                 double ratingsSum = 0;
                 double ratingsCount = 0;
                 double emeptyCells = 0;
@@ -1086,7 +1086,7 @@ namespace SecretSharing
                 }
 
 
-                int averageRating = (int)(ratingsSum / ratingsCount);
+                sbyte averageRating = (sbyte)(ratingsSum / ratingsCount);
                 int numOfCellsToPlaceFakeRating = (int)((emeptyCells / 100) * percentOfFakeCells);
                 var vendorMatrixWithFakeCells = vendorUserItemMatrix.PlaceFakeCells(numOfCellsToPlaceFakeRating, averageRating);
 
@@ -1095,7 +1095,7 @@ namespace SecretSharing
             return YPPredictedRatings;
         }
 
-        public static double CalcSimilarityScoreNoCrypto(int[,] userItemMatrix, int i, int j)
+        public static double CalcSimilarityScoreNoCrypto(sbyte[,] userItemMatrix, int i, int j)
         {
             double[] cl = userItemMatrix.GetVerticalVector(i).Select(o => (double)o).ToArray();
             double[] clPow = Array.ConvertAll(cl, x => x * x);
@@ -1121,7 +1121,7 @@ namespace SecretSharing
             return similarityScore;
         }
 
-        public static double[,] CalcSimilarityMatrixNoCrypto(int[,] userItemMatrix)
+        public static double[,] CalcSimilarityMatrixNoCrypto(sbyte[,] userItemMatrix)
         {
             int items = userItemMatrix.GetLength(1);
             double[,] similarityMatrix = new double[items, items];
@@ -1165,7 +1165,7 @@ namespace SecretSharing
         /// </summary>
         /// <param name="userItemMatrix"></param>
         /// <returns>Array of marices - each matrix has M vectors of shares</returns>
-        public static List<double[]>[] SecretShareRHat(int[,] userItemMatrix, int numOfShares)
+        public static List<double[]>[] SecretShareRHat(sbyte[,] userItemMatrix, int numOfShares)
         {
             // Array of marices - each matrix has M vectors of shares
             // For example RHatShares[2][1] is the second column of r-hat of the third mediator
@@ -1224,11 +1224,11 @@ namespace SecretSharing
         /// </summary>
         /// <param name="userItemMatrix"></param>
         /// <returns>Array of marices - each matrix has M vectors of shares</returns>
-        public static List<double[]>[] SecretShareXiR(int[,] userItemMatrix, int numOfShares)
+        public static List<double[]>[] SecretShareXiR(sbyte[,] userItemMatrix, int numOfShares)
         {
             List<double[]>[] xiRShares = new List<double[]>[numOfShares];
 
-            int[,] xiR = userItemMatrix.GetXi();
+            sbyte[,] xiR = userItemMatrix.GetXi();
             for (int i = 0; i < xiR.GetLength(1); i++)
             {
                 var xiRatings = xiR.GetVerticalVector(i).Select(o => (double)o).ToArray();
@@ -1259,7 +1259,7 @@ namespace SecretSharing
             int N = shares[0].GetLength(0);
             int M = shares[0].GetLength(1);
 
-            int[,] zeroedMatrix = new int[N, M];
+            sbyte[,] zeroedMatrix = new sbyte[N, M];
             for (int i = 0; i < N; i++)
             {
                 for (int j = 0; j < M; j++)
@@ -1356,7 +1356,7 @@ namespace SecretSharing
             return sm;
         }
 
-        public static int GetPredictedRatingNoCrypto(int[,] userItemMatrix, int n, int m, int q, double[,] similarityMatrixNoCrypto = null)
+        public static int GetPredictedRatingNoCrypto(sbyte[,] userItemMatrix, int n, int m, int q, double[,] similarityMatrixNoCrypto = null)
         {
             var averageRatings = userItemMatrix.GetAverageRatings();
             var averageRating = averageRatings[m];

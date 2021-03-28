@@ -21,7 +21,7 @@ namespace ProtocolTests
             int n = 1;
             int m = 1;
 
-            var userItemMatrix = new int[3, 3] { { 1, 2, 3 }, { 4, 0, 5 }, { 4, 2, 1 } };
+            var userItemMatrix = new sbyte[3, 3] { { 1, 2, 3 }, { 4, 0, 5 }, { 4, 2, 1 } };
             var R_ks = Protocols.SplitUserItemMatrixBetweenVendors(userItemMatrix, k);
 
             SimilarityMatrixAndShares smas = Protocols.CalcSimilarityMatrix(R_ks, D);
@@ -103,7 +103,7 @@ namespace ProtocolTests
         public void TestCalcSimilarityMatrix3MediatorsOld()
         {
             // ARRANGE
-            int[,] userItemMatrix = new int[2, 2] { { 2, 5 }, { 3, 4 } };
+            sbyte[,] userItemMatrix = new sbyte[2, 2] { { 2, 5 }, { 3, 4 } };
             int[] itemsVendorIndex = new int[2] { 0, 1 };
 
             //ACT
@@ -121,7 +121,7 @@ namespace ProtocolTests
         public void TestCalcSimilarityMatrix3Mediators()
         {
             // ARRANGE
-            int[,] userItemMatrix = new int[2, 2] { { 2, 5 }, { 3, 4 } };
+            sbyte[,] userItemMatrix = new sbyte[2, 2] { { 2, 5 }, { 3, 4 } };
 
             //ACT
             var R_ks = Protocols.SplitUserItemMatrixBetweenVendors(userItemMatrix, 2);
@@ -140,7 +140,7 @@ namespace ProtocolTests
         public void TestCalcSimilarityMatrix5MediatorsOld()
         {
             // ARRANGE
-            int[,] userItemMatrix = new int[2, 2] { { 2, 5 }, { 3, 4 } };
+            sbyte[,] userItemMatrix = new sbyte[2, 2] { { 2, 5 }, { 3, 4 } };
             int[] itemsVendorIndex = new int[2] { 0, 1 };
 
             //ACT
@@ -158,7 +158,7 @@ namespace ProtocolTests
         public void TestCalcSimilarityMatrix5Mediators()
         {
             // ARRANGE
-            int[,] userItemMatrix = new int[2, 2] { { 2, 5 }, { 3, 4 } };
+            sbyte[,] userItemMatrix = new sbyte[2, 2] { { 2, 5 }, { 3, 4 } };
 
             //ACT
             var R_ks = Protocols.SplitUserItemMatrixBetweenVendors(userItemMatrix, 2);
@@ -177,7 +177,7 @@ namespace ProtocolTests
         public void TestCalcSimilarityMatrix7MediatorsOld()
         {
             // ARRANGE
-            int[,] userItemMatrix = new int[2, 2] { { 2, 5 }, { 3, 4 } };
+            sbyte[,] userItemMatrix = new sbyte[2, 2] { { 2, 5 }, { 3, 4 } };
             int[] itemsVendorIndex = new int[2] { 0, 1 };
 
             //ACT
@@ -195,7 +195,7 @@ namespace ProtocolTests
         public void TestCalcSimilarityMatrix7Mediators()
         {
             // ARRANGE
-            int[,] userItemMatrix = new int[2, 2] { { 2, 5 }, { 3, 4 } };
+            sbyte[,] userItemMatrix = new sbyte[2, 2] { { 2, 5 }, { 3, 4 } };
 
             //ACT
             var R_ks = Protocols.SplitUserItemMatrixBetweenVendors(userItemMatrix, 2);
@@ -214,7 +214,7 @@ namespace ProtocolTests
         public void TestCalcSimilarityMatrix9MediatorsOld()
         {
             // ARRANGE
-            int[,] userItemMatrix = new int[2, 2] { { 2, 5 }, { 3, 4 } };
+            sbyte[,] userItemMatrix = new sbyte[2, 2] { { 2, 5 }, { 3, 4 } };
             int[] itemsVendorIndex = new int[2] { 0, 1 };
 
             //ACT
@@ -232,7 +232,7 @@ namespace ProtocolTests
         public void TestCalcSimilarityMatrix9Mediators()
         {
             // ARRANGE
-            int[,] userItemMatrix = new int[2, 2] { { 2, 5 }, { 3, 4 } };
+            sbyte[,] userItemMatrix = new sbyte[2, 2] { { 2, 5 }, { 3, 4 } };
 
             //ACT
             var R_ks = Protocols.SplitUserItemMatrixBetweenVendors(userItemMatrix, 2);
@@ -295,7 +295,7 @@ namespace ProtocolTests
         public void TestSecretShareRHat()
         {
             // ARRANGE
-            int[,] userItemMatrix = new int[2, 2] { { 2, 5 }, { 3, 4 } };
+            sbyte[,] userItemMatrix = new sbyte[2, 2] { { 2, 5 }, { 3, 4 } };
             int D = 5;
 
             // ACT
@@ -316,7 +316,7 @@ namespace ProtocolTests
         public void TestSecretShareXiR()
         {
             // ARRANGE
-            int[,] userItemMatrix = new int[2, 2] { { 0, 5 }, { 3, 4 } };
+            sbyte[,] userItemMatrix = new sbyte[2, 2] { { 0, 5 }, { 3, 4 } };
             int D = 5;
 
             // ACT
@@ -337,8 +337,8 @@ namespace ProtocolTests
         public void TestAverageRating()
         {
             // ARRANGE
-            int[,] matrix = new int[5, 1] { { 0 }, { 1 }, { 2 }, { 3 }, { 4 } };
-            int[,] xiMatrix = new int[5, 1] { { 0 }, { 1 }, { 1 }, { 1 }, { 1 } };
+            sbyte[,] matrix = new sbyte[5, 1] { { 0 }, { 1 }, { 2 }, { 3 }, { 4 } };
+            sbyte[,] xiMatrix = new sbyte[5, 1] { { 0 }, { 1 }, { 1 }, { 1 }, { 1 } };
             double realAverage = 2.5;
             var RShares = Protocols.ShamirSecretSharingMatrix(matrix, 3);
             var xiRShares = Protocols.ShamirSecretSharingMatrix(xiMatrix, 3);
@@ -354,7 +354,7 @@ namespace ProtocolTests
         public void TestVectorObfuscation()
         {
             // ARRANGE
-            int[,] matrix = new int[3, 3] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } };
+            sbyte[,] matrix = new sbyte[3, 3] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } };
             var shares = Protocols.ShamirSecretSharingMatrix(matrix, 5);
             var cm = matrix.GetVerticalVector(0).Select(o => (double)o).ToArray();
             var cl = matrix.GetVerticalVector(1).Select(o => (double)o).ToArray();
@@ -375,7 +375,7 @@ namespace ProtocolTests
         {
             // ARRANGE
             int D = 5;
-            int[,] userItemMatrix = new int[2, 3] { { 2, 5, 3 }, { 3, 4, 5 } };
+            sbyte[,] userItemMatrix = new sbyte[2, 3] { { 2, 5, 3 }, { 3, 4, 5 } };
             int[] itemsVendorIndex = new int[3] { 0, 1, 2 };
 
             var XiRShares = Protocols.SecretShareXiR(userItemMatrix, D);
@@ -424,7 +424,7 @@ namespace ProtocolTests
             int m = 2;
             int D = 5;
             int q = 2;
-            int[,] userItemMatrix = new int[4, 4] { { 1, 2, 0, 3 }, { 3, 4, 1, 5 }, { 2, 3, 3, 4 }, { 1, 2, 3, 2 } };
+            sbyte[,] userItemMatrix = new sbyte[4, 4] { { 1, 2, 0, 3 }, { 3, 4, 1, 5 }, { 2, 3, 3, 4 }, { 1, 2, 3, 2 } };
             int[] itemsVendorIndex = new int[4] { 0, 0, 1, 1 };
 
             double x_dSum = 0;
@@ -487,7 +487,7 @@ namespace ProtocolTests
             int q = 2;
             int h = 2;
             int D = 3;
-            int[,] userItemMatrix = new int[4, 4] { { 0, 1, 0, 0 }, { 3, 2, 5, 1 }, { 1, 3, 1, 5 }, { 4, 2, 3, 5 } };
+            sbyte[,] userItemMatrix = new sbyte[4, 4] { { 0, 1, 0, 0 }, { 3, 2, 5, 1 }, { 1, 3, 1, 5 }, { 4, 2, 3, 5 } };
             var similarityMatrix = Protocols.CalcSimilarityMatrixNoCrypto(userItemMatrix);
             var userRatings = userItemMatrix.GetHorizontalVector(selectedUser);
             int numOfItems = userRatings.Length;
@@ -525,9 +525,9 @@ namespace ProtocolTests
             #endregion
 
             // ACT
-            int[,] Rk = new int[4, 4] { { 0, 1, 0, 0 }, { 3, 2, 5, 1 }, { 1, 3, 1, 5 }, { 4, 2, 3, 5 } };
+            sbyte[,] Rk = new sbyte[4, 4] { { 0, 1, 0, 0 }, { 3, 2, 5, 1 }, { 1, 3, 1, 5 }, { 4, 2, 3, 5 } };
 
-            SimilarityMatrixAndShares smas = Protocols.CalcSimilarityMatrix(new List<int[,]> { Rk }, D);
+            SimilarityMatrixAndShares smas = Protocols.CalcSimilarityMatrix(new List<sbyte[,]> { Rk }, D);
             similarityMatrix = smas.SimilarityMatrix;
             var RShares = smas.RShares;
             var SqRShare = smas.SqRShares;
@@ -573,7 +573,7 @@ namespace ProtocolTests
             int q = 2;
             int h = 2;
             int D = 3;
-            int[,] userItemMatrix = new int[4, 4] { { 0, 1, 0, 0 }, { 3, 2, 5, 1 }, { 1, 3, 1, 5 }, { 4, 2, 3, 5 } };
+            sbyte[,] userItemMatrix = new sbyte[4, 4] { { 0, 1, 0, 0 }, { 3, 2, 5, 1 }, { 1, 3, 1, 5 }, { 4, 2, 3, 5 } };
             var similarityMatrix = Protocols.CalcSimilarityMatrixNoCrypto(userItemMatrix);
             var userRatings = userItemMatrix.GetHorizontalVector(selectedUser);
             int numOfItems = userRatings.Length;
@@ -664,8 +664,8 @@ namespace ProtocolTests
         {
 
             // ARRANGE
-            int[,] matrix = new int[2, 5] { { 1, 0, 2, 0, 3 }, { 0, 3, 2, 0, 3 } };
-            int[,] expectedMatrix = new int[2, 5] { { 1, 2, 2, 3, 3 }, { 2, 3, 2, 3, 3 } };
+            sbyte[,] matrix = new sbyte[2, 5] { { 1, 0, 2, 0, 3 }, { 0, 3, 2, 0, 3 } };
+            sbyte[,] expectedMatrix = new sbyte[2, 5] { { 1, 2, 2, 3, 3 }, { 2, 3, 2, 3, 3 } };
             // ACT
             var YP = Protocols.GetYPUserItemMatrix(matrix, new List<int[]> { new int[3] { 0, 1, 2 }, new int[2] { 3, 4 } }, 100);
 
@@ -678,7 +678,7 @@ namespace ProtocolTests
         public void TestUserItemMatrixSplit()
         {
             // ARRANGE
-            int[,] userItemMatrix = new int[4, 4] { { 1, 2, 0, 3 }, { 3, 4, 1, 5 }, { 2, 3, 3, 4 }, { 1, 2, 3, 2 } };
+            sbyte[,] userItemMatrix = new sbyte[4, 4] { { 1, 2, 0, 3 }, { 3, 4, 1, 5 }, { 2, 3, 3, 4 }, { 1, 2, 3, 2 } };
             int N = userItemMatrix.GetLength(0);
             int M = userItemMatrix.GetLength(1);
 
@@ -719,8 +719,8 @@ namespace ProtocolTests
         public void TestCalcSq()
         {
             // ARRANGE
-            int[,] matrix = new int[3, 3] { { 1, 2, -1 }, { 3, -1, 5 }, { -1, 3, 4 } };
-            int[,] realSq = new int[3, 3] { { 1, 4, 0 }, { 9, 0, 25 }, { 0, 9, 16 } };
+            sbyte[,] matrix = new sbyte[3, 3] { { 1, 2, -1 }, { 3, -1, 5 }, { -1, 3, 4 } };
+            sbyte[,] realSq = new sbyte[3, 3] { { 1, 4, 0 }, { 9, 0, 25 }, { 0, 9, 16 } };
 
 
             // ACT
@@ -734,8 +734,8 @@ namespace ProtocolTests
         public void TestCalcXi()
         {
             // ARRANGE
-            int[,] matrix = new int[3, 3] { { 1, 0, -1 }, { 3, -1, 5 }, { -1, 3, 4 } };
-            int[,] realXi = new int[3, 3] { { 1, 0, 0 }, { 1, 0, 1 }, { 0, 1, 1 } };
+            sbyte[,] matrix = new sbyte[3, 3] { { 1, 0, -1 }, { 3, -1, 5 }, { -1, 3, 4 } };
+            sbyte[,] realXi = new sbyte[3, 3] { { 1, 0, 0 }, { 1, 0, 1 }, { 0, 1, 1 } };
 
 
             // ACT

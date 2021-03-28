@@ -37,7 +37,7 @@ namespace SecretSharing
         {
             #region Settings
 
-            int[,] userItemMatrix = Protocols.ReadUserItemMatrix($"ratings-distict-{dataset}.dat");
+            sbyte[,] userItemMatrix = Protocols.ReadUserItemMatrix($"ratings-distict-{dataset}.dat");
 
             int N = userItemMatrix.GetLength(0); // users
             int M = userItemMatrix.GetLength(1); // items
@@ -54,13 +54,13 @@ namespace SecretSharing
 
             #region Computing the similarity matrix and the shares (Protocol 1+2)
 
-            int[,] trainingUserItemMatrix = null;
-            int[,] testingUserItemMatrix = null;
+            sbyte[,] trainingUserItemMatrix = null;
+            sbyte[,] testingUserItemMatrix = null;
             double[,] similarityMatrix = null;
             List<double[,]> RShares = null;
             List<double[,]> SqRShare = null;
             List<double[,]> XiRShares = null;
-            List<int[,]> R_ks;
+            List<sbyte[,]> R_ks;
 
 
             var sets = userItemMatrix.SplitToTrainingAndTesting();
@@ -183,7 +183,7 @@ namespace SecretSharing
 
             #region Settings
 
-            int[,] userItemMatrix = Protocols.ReadUserItemMatrix($"ratings-distict-{dataset}.dat");
+            sbyte[,] userItemMatrix = Protocols.ReadUserItemMatrix($"ratings-distict-{dataset}.dat");
 
             int N = userItemMatrix.GetLength(0); // users
             int M = userItemMatrix.GetLength(1); // items
@@ -197,7 +197,7 @@ namespace SecretSharing
 
             #region Computing the similarity matrix and the shares (Protocol 1+2)
 
-            List<int[,]> R_ks;
+            List<sbyte[,]> R_ks;
 
             R_ks = Protocols.SplitUserItemMatrixBetweenVendors(userItemMatrix, k);
 
@@ -222,7 +222,7 @@ namespace SecretSharing
             bool predictRating = false;
             bool predictRanking = false;
 
-            int[,] userItemMatrix = Protocols.ReadUserItemMatrix($"ratings-distict-{dataset}.dat");
+            sbyte[,] userItemMatrix = Protocols.ReadUserItemMatrix($"ratings-distict-{dataset}.dat");
 
             int N = userItemMatrix.GetLength(0); // users
             int M = userItemMatrix.GetLength(1); // items
@@ -263,19 +263,19 @@ namespace SecretSharing
 
             #region Computing the similarity matrix (Protocol 1+2)
 
-            int[,] trainingUserItemMatrix = null;
-            int[,] testingUserItemMatrix = null;
+            sbyte[,] trainingUserItemMatrix = null;
+            sbyte[,] testingUserItemMatrix = null;
             double[,] similarityMatrix = null;
-            int[,] YPUserItemMatrix = null;
+            sbyte[,] YPUserItemMatrix = null;
             double[,] YPsimilarityMatrix = null;
 
             if (loadFromFile)
             {
-                trainingUserItemMatrix = Extensions.LoadIntMatrixFromFile(directoryName + "trainingUserItemMatrix.txt");
-                testingUserItemMatrix = Extensions.LoadIntMatrixFromFile(directoryName + "testingUserItemMatrix.txt");
+                trainingUserItemMatrix = Extensions.LoadSbyteMatrixFromFile(directoryName + "trainingUserItemMatrix.txt");
+                testingUserItemMatrix = Extensions.LoadSbyteMatrixFromFile(directoryName + "testingUserItemMatrix.txt");
                 similarityMatrix = Extensions.LoadDoubleMatrixFromFile(directoryName + "similarityMatrix.txt");
                 YPsimilarityMatrix = Extensions.LoadDoubleMatrixFromFile(directoryName + "YPsimilarityMatrix.txt");
-                YPUserItemMatrix = Extensions.LoadIntMatrixFromFile(directoryName + "YPUserItemMatrix.txt");
+                YPUserItemMatrix = Extensions.LoadSbyteMatrixFromFile(directoryName + "YPUserItemMatrix.txt");
             }
             else
             {
