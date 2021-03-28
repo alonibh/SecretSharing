@@ -337,8 +337,8 @@ namespace ProtocolTests
         public void TestAverageRating()
         {
             // ARRANGE
-            int?[,] matrix = new int?[5, 1] { { 0 }, { 1 }, { 2 }, { 3 }, { 4 } };
-            int?[,] xiMatrix = new int?[5, 1] { { 0 }, { 1 }, { 1 }, { 1 }, { 1 } };
+            int[,] matrix = new int[5, 1] { { 0 }, { 1 }, { 2 }, { 3 }, { 4 } };
+            int[,] xiMatrix = new int[5, 1] { { 0 }, { 1 }, { 1 }, { 1 }, { 1 } };
             double realAverage = 2.5;
             var RShares = Protocols.ShamirSecretSharingMatrix(matrix, 3);
             var xiRShares = Protocols.ShamirSecretSharingMatrix(xiMatrix, 3);
@@ -354,7 +354,7 @@ namespace ProtocolTests
         public void TestVectorObfuscation()
         {
             // ARRANGE
-            int?[,] matrix = new int?[3, 3] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } };
+            int[,] matrix = new int[3, 3] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } };
             var shares = Protocols.ShamirSecretSharingMatrix(matrix, 5);
             var cm = matrix.GetVerticalVector(0).Select(o => (double)o).ToArray();
             var cl = matrix.GetVerticalVector(1).Select(o => (double)o).ToArray();
@@ -525,9 +525,9 @@ namespace ProtocolTests
             #endregion
 
             // ACT
-            int?[,] Rk = new int?[4, 4] { { 0, 1, 0, 0 }, { 3, 2, 5, 1 }, { 1, 3, 1, 5 }, { 4, 2, 3, 5 } };
+            int[,] Rk = new int[4, 4] { { 0, 1, 0, 0 }, { 3, 2, 5, 1 }, { 1, 3, 1, 5 }, { 4, 2, 3, 5 } };
 
-            SimilarityMatrixAndShares smas = Protocols.CalcSimilarityMatrix(new List<int?[,]> { Rk}, D);
+            SimilarityMatrixAndShares smas = Protocols.CalcSimilarityMatrix(new List<int[,]> { Rk }, D);
             similarityMatrix = smas.SimilarityMatrix;
             var RShares = smas.RShares;
             var SqRShare = smas.SqRShares;
@@ -687,7 +687,7 @@ namespace ProtocolTests
             var R_ks = Protocols.SplitUserItemMatrixBetweenVendors(userItemMatrix, 3);
 
             // ASSERT
-            int?[,] sum = new int?[N, M];
+            int[,] sum = new int[N, M];
             foreach (var R_k in R_ks)
             {
                 for (int i = 0; i < N; i++)
@@ -719,8 +719,8 @@ namespace ProtocolTests
         public void TestCalcSq()
         {
             // ARRANGE
-            int?[,] matrix = new int?[3, 3] { { 1, 2, null }, { 3, null, 5 }, { null, 3, 4 } };
-            int?[,] realSq = new int?[3, 3] { { 1, 4, null }, { 9, null, 25 }, { null, 9, 16 } };
+            int[,] matrix = new int[3, 3] { { 1, 2, -1 }, { 3, -1, 5 }, { -1, 3, 4 } };
+            int[,] realSq = new int[3, 3] { { 1, 4, 0 }, { 9, 0, 25 }, { 0, 9, 16 } };
 
 
             // ACT
@@ -734,8 +734,8 @@ namespace ProtocolTests
         public void TestCalcXi()
         {
             // ARRANGE
-            int?[,] matrix = new int?[3, 3] { { 1, 0, null }, { 3, null, 5 }, { null, 3, 4 } };
-            int?[,] realXi = new int?[3, 3] { { 1, 0, null }, { 1, null, 1 }, { null, 1, 1 } };
+            int[,] matrix = new int[3, 3] { { 1, 0, -1 }, { 3, -1, 5 }, { -1, 3, 4 } };
+            int[,] realXi = new int[3, 3] { { 1, 0, 0 }, { 1, 0, 1 }, { 0, 1, 1 } };
 
 
             // ACT

@@ -18,6 +18,9 @@ namespace SecretSharing
             int q = 80; // num of similar items
             int h = 20; // num of most recomended items to take
 
+            MeasureOfflinePart1("10M", k: 1, D: 3);
+            return;
+
             foreach (var dataset in datasets)
             {
                 MeasureOfflinePart1(dataset, k: 1, D: 3);
@@ -57,7 +60,7 @@ namespace SecretSharing
             List<double[,]> RShares = null;
             List<double[,]> SqRShare = null;
             List<double[,]> XiRShares = null;
-            List<int?[,]> R_ks;
+            List<int[,]> R_ks;
 
 
             var sets = userItemMatrix.SplitToTrainingAndTesting();
@@ -194,7 +197,7 @@ namespace SecretSharing
 
             #region Computing the similarity matrix and the shares (Protocol 1+2)
 
-            List<int?[,]> R_ks;
+            List<int[,]> R_ks;
 
             R_ks = Protocols.SplitUserItemMatrixBetweenVendors(userItemMatrix, k);
 

@@ -143,27 +143,10 @@ namespace SecretSharing
             return splittedUserItemMatrix;
         }
 
-        /// <summary>
-        /// In order to retrive the ratings vector from all the users from the user-item matrix 
-        /// </summary>
-        /// <param name="matrix"></param>
-        /// <param name="index"></param>
-        /// <returns></returns>
-        public static int[] GetVerticalVector(this int[,] matrix, int index)
+        public static T[] GetVerticalVector<T>(this T[,] matrix, int index)
         {
             int length = matrix.GetLength(0);
-            int[] vector = new int[length];
-            for (int i = 0; i < length; i++)
-            {
-                vector[i] = matrix[i, index];
-            }
-            return vector;
-        }
-
-        public static int?[] GetVerticalVector(this int?[,] matrix, int index)
-        {
-            int length = matrix.GetLength(0);
-            int?[] vector = new int?[length];
+            T[] vector = new T[length];
             for (int i = 0; i < length; i++)
             {
                 vector[i] = matrix[i, index];
@@ -181,38 +164,10 @@ namespace SecretSharing
             return vector;
         }
 
-        public static double[] GetVerticalVector(this double[,] matrix, int index)
-        {
-            int length = matrix.GetLength(0);
-            double[] vector = new double[length];
-            for (int i = 0; i < length; i++)
-            {
-                vector[i] = matrix[i, index];
-            }
-            return vector;
-        }
-
-        public static double[] GetHorizontalVector(this double[,] matrix, int index)
+        public static T[] GetHorizontalVector<T>(this T[,] matrix, int index)
         {
             int length = matrix.GetLength(1);
-            double[] vector = new double[length];
-            for (int i = 0; i < length; i++)
-            {
-                vector[i] = matrix[index, i];
-            }
-            return vector;
-        }
-
-        /// <summary>
-        /// In order to retrive r_n from the user-item matrix 
-        /// </summary>
-        /// <param name="matrix"></param>
-        /// <param name="index"></param>
-        /// <returns></returns>
-        public static int[] GetHorizontalVector(this int[,] matrix, int index)
-        {
-            int length = matrix.GetLength(1);
-            int[] vector = new int[length];
+            T[] vector = new T[length];
             for (int i = 0; i < length; i++)
             {
                 vector[i] = matrix[index, i];
@@ -331,7 +286,7 @@ namespace SecretSharing
             return xiVector;
         }
 
-        public static (int, int) GetFirstNotNullEntry(this int?[,] matrix)
+        public static (int, int) GetFirstNotNullEntry(this int[,] matrix)
         {
             int N = matrix.GetLength(0);
             int M = matrix.GetLength(1);
@@ -340,7 +295,7 @@ namespace SecretSharing
             {
                 for (int j = 0; j < M; j++)
                 {
-                    if (matrix[i, j] != null)
+                    if (matrix[i, j] != -1)
                     {
                         return (i, j);
                     }
@@ -559,38 +514,38 @@ namespace SecretSharing
             return fakeMatrix;
         }
 
-        public static int?[,] CalcSq(this int?[,] matrix)
+        public static int[,] CalcSq(this int[,] matrix)
         {
             int N = matrix.GetLength(0);
             int M = matrix.GetLength(1);
 
-            int?[,] sq = new int?[N, M];
+            int[,] sq = new int[N, M];
             for (int i = 0; i < N; i++)
             {
                 for (int j = 0; j < M; j++)
                 {
-                    if (matrix[i, j] != null)
+                    if (matrix[i, j] != -1)
                     {
-                        sq[i, j] = (int?)Math.Pow(matrix[i, j].Value, 2);
+                        sq[i, j] = (int)Math.Pow(matrix[i, j], 2);
                     }
                 }
             }
             return sq;
         }
 
-        public static int?[,] CalcXi(this int?[,] matrix)
+        public static int[,] CalcXi(this int[,] matrix)
         {
             int N = matrix.GetLength(0);
             int M = matrix.GetLength(1);
 
-            int?[,] xi = new int?[N, M];
+            int[,] xi = new int[N, M];
             for (int i = 0; i < N; i++)
             {
                 for (int j = 0; j < M; j++)
                 {
-                    if (matrix[i, j] != null)
+                    if (matrix[i, j] != -1)
                     {
-                        xi[i, j] = matrix[i, j].Value == 0 ? 0 : 1;
+                        xi[i, j] = matrix[i, j] == 0 ? 0 : 1;
                     }
                 }
             }
