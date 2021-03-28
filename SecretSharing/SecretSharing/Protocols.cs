@@ -169,6 +169,9 @@ namespace SecretSharing
 
             mediatorsWatch.Start();
 
+            Console.WriteLine("Starting organizing shares for each mediator");
+
+
             Parallel.For(0, M, (i) =>
             {
                 List<double[]> clShares = new List<double[]>();
@@ -192,6 +195,8 @@ namespace SecretSharing
                 }
                 XiClSharesArray[i] = XiClShares;
             });
+
+            Console.WriteLine("Done organizing shares for each mediator");
 
             for (int i = 0; i < M; i++)
             {
