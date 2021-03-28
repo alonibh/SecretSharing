@@ -5,16 +5,15 @@ using System.Data;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Numerics;
 using System.Threading.Tasks;
 
 namespace SecretSharing
 {
     public static class Protocols
     {
-        public static readonly double PRIME = 2147483647;
+        public static readonly ulong PRIME = 2147483647;
 
-        public static readonly double Q = 100;
+        public static readonly int Q = 100;
 
         public static readonly Random random = new Random();
 
@@ -837,13 +836,13 @@ namespace SecretSharing
         /// <returns></returns>
         public static double ScalarProductShares(List<double[]> clShares, List<double[]> cmShares)
         {
-            BigInteger[] coordinates = new BigInteger[clShares.Count];
+            ulong[] coordinates = new ulong[clShares.Count];
 
             for (int indexCount = 0; indexCount < clShares.Count; indexCount++)
             {
                 for (int shareCount = 0; shareCount < clShares[0].Length; shareCount++)
                 {
-                    var newY = (BigInteger)clShares[indexCount][shareCount] * (BigInteger)cmShares[indexCount][shareCount];
+                    var newY = (ulong)clShares[indexCount][shareCount] * (ulong)cmShares[indexCount][shareCount];
 
                     coordinates[indexCount] += newY;
                 }
@@ -854,9 +853,9 @@ namespace SecretSharing
             return secret;
         }
 
-        public static BigInteger[] GenerateXd(int q, int[] offeredItemIndecis, double[,] similarityMatrix, double[] xiRShareVector)
+        public static ulong[] GenerateXd(int q, int[] offeredItemIndecis, double[,] similarityMatrix, double[] xiRShareVector)
         {
-            List<BigInteger> Xd = new List<BigInteger>();
+            List<ulong> Xd = new List<ulong>();
             List<double> XdShares = new List<double>();
             List<double> oneMinusXiShares = new List<double>();
             double addon = Q * q + 1;
@@ -871,7 +870,7 @@ namespace SecretSharing
 
             for (int i = 0; i < XdShares.Count; i++)
             {
-                var mult = (BigInteger)XdShares[i] * (BigInteger)oneMinusXiShares[i];
+                long mult = (long)(XdShares[i] * oneMinusXiShares[i]);
                 var mod = ModForNegative(mult);
                 Xd.Add(mod);
             }
@@ -913,7 +912,7 @@ namespace SecretSharing
 
         public static double MultiplySharesByVector(List<double[]> shares, double[] vector)
         {
-            List<BigInteger> xds = new List<BigInteger>();
+            List<ulong> xds = new List<ulong>();
             foreach (var share in shares)
             {
                 double xd = 0;
@@ -922,7 +921,7 @@ namespace SecretSharing
                     xd += share[itemCounter] * vector[itemCounter];
                 }
                 xd = Math.Round(xd, 0);
-                xds.Add((BigInteger)xd);
+                xds.Add((ulong)xd);
             }
 
             var secret = ReconstructShamirSecret(xds);
@@ -944,18 +943,18 @@ namespace SecretSharing
                 Yds.Add(share.GetVerticalVector(m).Sum());
             }
 
-            List<BigInteger> xCoordinates = new List<BigInteger>();
+            List<ulong> xCoordinates = new List<ulong>();
 
             foreach (var xd in Xds)
             {
-                xCoordinates.Add((BigInteger)xd);
+                xCoordinates.Add((ulong)xd);
             }
             var x = ReconstructShamirSecret(xCoordinates);
 
-            List<BigInteger> yCoordinates = new List<BigInteger>();
+            List<ulong> yCoordinates = new List<ulong>();
             foreach (var yd in Yds)
             {
-                yCoordinates.Add((BigInteger)yd);
+                yCoordinates.Add((ulong)yd);
             }
             var y = ReconstructShamirSecret(yCoordinates);
 
@@ -1023,24 +1022,24 @@ namespace SecretSharing
             return sum % PRIME;
         }
 
-        public static double ReconstructShamirSecret(List<BigInteger> coordinates)
+        public static double ReconstructShamirSecret(List<ulong> coordinates)
         {
             double secret = 0;
             if (coordinates.Count == 3)
             {
-                secret = (double)((3 * (coordinates[0] - coordinates[1]) + coordinates[2]) % (BigInteger)PRIME);
+                secret = ((3 * (coordinates[0] - coordinates[1]) + coordinates[2]) % PRIME);
             }
             else if (coordinates.Count == 5)
             {
-                secret = (double)(((5 * (coordinates[0] - coordinates[3])) - (10 * (coordinates[1] - coordinates[2])) + coordinates[4]) % (BigInteger)PRIME);
+                secret = ((5 * (coordinates[0] - coordinates[3])) - (10 * (coordinates[1] - coordinates[2])) + coordinates[4]) % PRIME;
             }
             else if (coordinates.Count == 7)
             {
-                secret = (double)(((7 * (coordinates[0] - coordinates[5])) + (21 * (coordinates[4] - coordinates[1])) + (35 * (coordinates[2] - coordinates[3])) + coordinates[6]) % (BigInteger)PRIME);
+                secret = ((7 * (coordinates[0] - coordinates[5])) + (21 * (coordinates[4] - coordinates[1])) + (35 * (coordinates[2] - coordinates[3])) + coordinates[6]) % PRIME;
             }
             else if (coordinates.Count == 9)
             {
-                secret = (double)(((9 * (coordinates[0] - coordinates[7])) + (36 * (coordinates[6] - coordinates[1])) + (84 * (coordinates[2] - coordinates[5])) + (126 * (coordinates[4] - coordinates[3])) + coordinates[8]) % (BigInteger)PRIME);
+                secret = ((9 * (coordinates[0] - coordinates[7])) + (36 * (coordinates[6] - coordinates[1])) + (84 * (coordinates[2] - coordinates[5])) + (126 * (coordinates[4] - coordinates[3])) + coordinates[8]) % PRIME;
             }
 
             if (secret < 0)
@@ -1436,10 +1435,10 @@ namespace SecretSharing
             return coeffs;
         }
 
-        public static BigInteger ModForNegative(BigInteger x)
+        public static ulong ModForNegative(long x)
         {
-            BigInteger prime = (BigInteger)PRIME;
-            return (x % prime + prime) % prime;
+            long prime = 2147483647;
+            return (ulong)((x % prime + prime) % prime);
         }
     }
 

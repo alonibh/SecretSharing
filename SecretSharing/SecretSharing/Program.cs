@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Numerics;
 using System.Threading.Tasks;
 
 namespace SecretSharing
@@ -143,7 +142,7 @@ namespace SecretSharing
 
             int[] offeredItemIndecis = Protocols.GetItemsOfferedByVendor(R_ks[selectedVendor]);
 
-            List<BigInteger[]> Xs = new List<BigInteger[]>();
+            List<ulong[]> Xs = new List<ulong[]>();
             for (int mediatorIndex = 0; mediatorIndex < D; mediatorIndex++)
             {
                 var xiRShareVector = XiRShares[mediatorIndex].GetHorizontalVector(selectedUser);

@@ -2,7 +2,6 @@ using SecretSharing;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Numerics;
 using Xunit;
 
 namespace ProtocolTests
@@ -253,17 +252,17 @@ namespace ProtocolTests
             // ARRANGE
             double[] vector = new double[1] { 9 };
             var shares = Protocols.ShamirSecretSharing(vector, 5);
-            List<BigInteger> coordinates = new List<BigInteger>();
+            List<ulong> coordinates = new List<ulong>();
             foreach (var share in shares)
             {
-                coordinates.Add((BigInteger)share[0]);
+                coordinates.Add((ulong)share[0]);
             }
 
             // ACT
             double secret = 0;
             if (coordinates.Count == 5)
             {
-                secret = (double)(((5 * (coordinates[0] - coordinates[3])) - (10 * (coordinates[1] - coordinates[2])) + coordinates[4]) % (BigInteger)Protocols.PRIME);
+                secret = ((5 * (coordinates[0] - coordinates[3])) - (10 * (coordinates[1] - coordinates[2])) + coordinates[4]) % Protocols.PRIME;
             }
 
             if (secret < 0)
@@ -535,7 +534,7 @@ namespace ProtocolTests
 
             int[] offeredItemIndecis = new int[4] { 0, 1, 2, 3 };
 
-            List<BigInteger[]> Xs = new List<BigInteger[]>();
+            List<ulong[]> Xs = new List<ulong[]>();
             for (int mediatorIndex = 0; mediatorIndex < D; mediatorIndex++)
             {
                 var xiRShareVector = XiRShares[mediatorIndex].GetHorizontalVector(selectedUser);
