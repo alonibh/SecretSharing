@@ -119,12 +119,6 @@ namespace SecretSharing
             int N = R_ks[0].GetLength(0);
             int M = R_ks[0].GetLength(1);
 
-            // TODO - List takes too much RAM 
-
-            //double[,] RShares1 = new double[N, M];
-            //double[,] RShares2 = new double[N, M];
-            //double[,] RShares3 = new double[N, M];
-
             List<double[,]> RShares = new List<double[,]>();
             List<double[,]> SqRShares = new List<double[,]>();
             List<double[,]> XiRShares = new List<double[,]>();
