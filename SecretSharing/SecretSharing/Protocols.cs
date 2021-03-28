@@ -119,15 +119,15 @@ namespace SecretSharing
             int N = R_ks[0].GetLength(0);
             int M = R_ks[0].GetLength(1);
 
-            List<double[,]> RShares = new List<double[,]>();
-            List<double[,]> SqRShares = new List<double[,]>();
-            List<double[,]> XiRShares = new List<double[,]>();
+            List<uint[,]> RShares = new List<uint[,]>();
+            List<uint[,]> SqRShares = new List<uint[,]>();
+            List<uint[,]> XiRShares = new List<uint[,]>();
 
             for (int mediatorIndex = 0; mediatorIndex < numOfMediators; mediatorIndex++)
             {
-                RShares.Add(new double[N, M]);
-                SqRShares.Add(new double[N, M]);
-                XiRShares.Add(new double[N, M]);
+                RShares.Add(new uint[N, M]);
+                SqRShares.Add(new uint[N, M]);
+                XiRShares.Add(new uint[N, M]);
             }
 
             Console.WriteLine("Starting creating shares");
@@ -163,9 +163,9 @@ namespace SecretSharing
             Console.WriteLine($"Done creating shares in {creatingSharesTime.ToCustomTimeSpanFormat()}");
 
             double[,] similarityMatrix = new double[M, M];
-            List<double[]>[] clSharesArray = new List<double[]>[M];
-            List<double[]>[] SqClSharesArray = new List<double[]>[M];
-            List<double[]>[] XiClSharesArray = new List<double[]>[M];
+            List<uint[]>[] clSharesArray = new List<uint[]>[M];
+            List<uint[]>[] SqClSharesArray = new List<uint[]>[M];
+            List<uint[]>[] XiClSharesArray = new List<uint[]>[M];
 
             mediatorsWatch.Start();
 
@@ -174,21 +174,21 @@ namespace SecretSharing
 
             Parallel.For(0, M, (i) =>
             {
-                List<double[]> clShares = new List<double[]>();
+                List<uint[]> clShares = new List<uint[]>();
                 foreach (var share in RShares)
                 {
                     clShares.Add(share.GetVerticalVector(i));
                 }
                 clSharesArray[i] = clShares;
 
-                List<double[]> SqClShares = new List<double[]>();
+                List<uint[]> SqClShares = new List<uint[]>();
                 foreach (var share in SqRShares)
                 {
                     SqClShares.Add(share.GetVerticalVector(i));
                 }
                 SqClSharesArray[i] = SqClShares;
 
-                List<double[]> XiClShares = new List<double[]>();
+                List<uint[]> XiClShares = new List<uint[]>();
                 foreach (var share in XiRShares)
                 {
                     XiClShares.Add(share.GetVerticalVector(i));
@@ -402,16 +402,16 @@ namespace SecretSharing
         /// <param name="numOfSharesToMake"></param>
         /// <param name="numOfSharesForRecovery"></param>
         /// <returns>Shares matrix for each of the mediators</returns>
-        public static List<double[,]> ShamirSecretSharingMatrix(sbyte[,] matrix, int numOfShares)
+        public static List<uint[,]> ShamirSecretSharingMatrix(sbyte[,] matrix, int numOfShares)
         {
-            var shares = new List<double[,]>();
+            var shares = new List<uint[,]>();
             int N = matrix.GetLength(0);
             int M = matrix.GetLength(1);
             int maxRangeForRandom = 65536; //65536
 
             for (int i = 0; i < numOfShares; i++)
             {
-                shares.Add(new double[N, M]);
+                shares.Add(new uint[N, M]);
             }
 
             if (numOfShares == 3)
@@ -422,13 +422,13 @@ namespace SecretSharing
                     {
                         double a = random.Next(2, maxRangeForRandom);
 
-                        double lastY = 0;
+                        uint lastY = 0;
                         if (matrix[i, j] != -1)
-                            lastY = matrix[i, j];
+                            lastY = (uint)matrix[i, j];
 
                         for (int shareIndex = 0; shareIndex < 3; shareIndex++)
                         {
-                            var y = lastY + a;
+                            uint y = lastY + (uint)a;
                             lastY = y;
 
                             shares[shareIndex][i, j] = y;
@@ -443,24 +443,24 @@ namespace SecretSharing
                 {
                     for (int j = 0; j < M; j++)
                     {
-                        double entry = 0;
+                        uint entry = 0;
                         if (matrix[i, j] != -1)
-                            entry = matrix[i, j];
+                            entry = (uint)matrix[i, j];
 
-                        double a = random.Next(2, maxRangeForRandom);
-                        double b = random.Next(2, maxRangeForRandom);
+                        uint a = (uint)random.Next(2, maxRangeForRandom);
+                        uint b = (uint)random.Next(2, maxRangeForRandom);
 
-                        double B = a + b;
-                        double B2 = b + b;
-                        double B3 = B + B2;
-                        double B5 = B3 + B2;
-                        double B7 = B5 + B2;
-                        double B9 = B7 + B2;
-                        double lastY = 0;
+                        uint B = a + b;
+                        uint B2 = b + b;
+                        uint B3 = B + B2;
+                        uint B5 = B3 + B2;
+                        uint B7 = B5 + B2;
+                        uint B9 = B7 + B2;
+                        uint lastY = 0;
 
                         for (int shareIndex = 0; shareIndex < 5; shareIndex++)
                         {
-                            double y = 0;
+                            uint y = 0;
                             switch (shareIndex)
                             {
                                 case 0:
@@ -542,7 +542,7 @@ namespace SecretSharing
                             }
                             lastY = y;
 
-                            shares[shareIndex][i, j] = y;
+                            shares[shareIndex][i, j] = (uint)y;
                         }
                     }
                 }
@@ -612,7 +612,7 @@ namespace SecretSharing
                             }
                             lastY = y;
 
-                            shares[shareIndex][i, j] = y;
+                            shares[shareIndex][i, j] = (uint)y;
                         }
                     }
                 }
@@ -852,6 +852,25 @@ namespace SecretSharing
             return secret;
         }
 
+        public static double ScalarProductShares(List<uint[]> clShares, List<uint[]> cmShares)
+        {
+            ulong[] coordinates = new ulong[clShares.Count];
+
+            for (int indexCount = 0; indexCount < clShares.Count; indexCount++)
+            {
+                for (int shareCount = 0; shareCount < clShares[0].Length; shareCount++)
+                {
+                    var newY = (ulong)clShares[indexCount][shareCount] * (ulong)cmShares[indexCount][shareCount];
+
+                    coordinates[indexCount] += newY;
+                }
+            }
+
+            var secret = ReconstructShamirSecret(coordinates.ToList());
+
+            return secret;
+        }
+
         public static ulong[] GenerateXd(int q, int[] offeredItemIndecis, double[,] similarityMatrix, double[] xiRShareVector)
         {
             List<ulong> Xd = new List<ulong>();
@@ -876,6 +895,32 @@ namespace SecretSharing
 
             return Xd.ToArray();
         }
+
+        public static ulong[] GenerateXd(int q, int[] offeredItemIndecis, double[,] similarityMatrix, uint[] xiRShareVector)
+        {
+            List<ulong> Xd = new List<ulong>();
+            List<double> XdShares = new List<double>();
+            List<double> oneMinusXiShares = new List<double>();
+            double addon = Q * q + 1;
+            foreach (var itemIndex in offeredItemIndecis)
+            {
+                double Xdm = addon;
+                double[] topItemsSimilarityVector = GetSimilarityVectorForTopSimilarItemsToM(similarityMatrix, itemIndex, q, false);
+                Xdm += ScalarProductVectors(topItemsSimilarityVector, xiRShareVector);
+                XdShares.Add(Xdm);
+                oneMinusXiShares.Add(1 - xiRShareVector[itemIndex]);
+            }
+
+            for (int i = 0; i < XdShares.Count; i++)
+            {
+                long mult = (long)(XdShares[i] * oneMinusXiShares[i]);
+                var mod = ModForNegative(mult);
+                Xd.Add(mod);
+            }
+
+            return Xd.ToArray();
+        }
+
 
         public static int[] GetItemsOfferedByVendor(sbyte[,] Rk)
         {
@@ -909,6 +954,18 @@ namespace SecretSharing
             return Vnm;
         }
 
+        public static double CalcVnm(List<uint[]> XiRnShares, double[] sm, double[] averageRatings)
+        {
+            double[] cl = new double[averageRatings.Length];
+            for (int i = 0; i < cl.Length; i++)
+            {
+                cl[i] = Math.Round(Q * sm[i] * averageRatings[i], 0);
+            }
+            double Vnm = MultiplySharesByVector(XiRnShares, cl) / Q;
+
+            return Vnm;
+        }
+
         public static double MultiplySharesByVector(List<double[]> shares, double[] vector)
         {
             List<ulong> xds = new List<ulong>();
@@ -926,6 +983,62 @@ namespace SecretSharing
             var secret = ReconstructShamirSecret(xds);
 
             return secret;
+        }
+
+        public static double MultiplySharesByVector(List<uint[]> shares, double[] vector)
+        {
+            List<ulong> xds = new List<ulong>();
+            foreach (var share in shares)
+            {
+                double xd = 0;
+                for (int itemCounter = 0; itemCounter < vector.Length; itemCounter++)
+                {
+                    xd += share[itemCounter] * vector[itemCounter];
+                }
+                xd = Math.Round(xd, 0);
+                xds.Add((ulong)xd);
+            }
+
+            var secret = ReconstructShamirSecret(xds);
+
+            return secret;
+        }
+
+        public static double ComputeAverageRating(List<uint[,]> RShares, List<uint[,]> XiRShares, int m)
+        {
+            List<double> Xds = new List<double>();
+            foreach (var share in RShares)
+            {
+                Xds.Add(share.GetVerticalVector(m).Select(o=>(double)o).Sum());
+            }
+
+            List<double> Yds = new List<double>();
+            foreach (var share in XiRShares)
+            {
+                Yds.Add(share.GetVerticalVector(m).Select(o => (double)o).Sum());
+            }
+
+            List<ulong> xCoordinates = new List<ulong>();
+
+            foreach (var xd in Xds)
+            {
+                xCoordinates.Add((ulong)xd);
+            }
+            var x = ReconstructShamirSecret(xCoordinates);
+
+            List<ulong> yCoordinates = new List<ulong>();
+            foreach (var yd in Yds)
+            {
+                yCoordinates.Add((ulong)yd);
+            }
+            var y = ReconstructShamirSecret(yCoordinates);
+
+            if (y == 0)
+            {
+                return 0;
+            }
+
+            return x / y;
         }
 
         public static double ComputeAverageRating(List<double[,]> RShares, List<double[,]> XiRShares, int m)
@@ -1020,6 +1133,19 @@ namespace SecretSharing
 
             return sum % PRIME;
         }
+
+        public static double ScalarProductVectors(double[] vector1, uint[] vector2)
+        {
+            int length = vector1.Length;
+            double sum = 0;
+            for (int i = 0; i < length; i++)
+            {
+                sum += vector1[i] * vector2[i];
+            }
+
+            return sum % PRIME;
+        }
+
 
         public static double ReconstructShamirSecret(List<ulong> coordinates)
         {
@@ -1257,9 +1383,9 @@ namespace SecretSharing
         /// </summary>
         /// <param name="xiRShares"></param>
         /// <returns></returns>
-        public static List<double[,]> ObfuscateShares(List<double[,]> shares)
+        public static List<uint[,]> ObfuscateShares(List<uint[,]> shares)
         {
-            List<double[,]> obfescatedShares = new List<double[,]>();
+            List<uint[,]> obfescatedShares = new List<uint[,]>();
             int N = shares[0].GetLength(0);
             int M = shares[0].GetLength(1);
 

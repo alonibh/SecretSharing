@@ -11,14 +11,12 @@ namespace SecretSharing
     {
         static void Main()
         {
-            string[] datasets = new string[3] { "100K", "1M", "10M" }; //test
+            string[] datasets = new string[2] { "100K", "1M" }; //test, "10M"
             // k - vendors
             // D - mediators
             int q = 80; // num of similar items
             int h = 20; // num of most recomended items to take
-
-            MeasureOfflinePart1("1M", k: 1, D: 3);
-            return;
+                MeasureOfflinePart1("1M", k: 1, D: 7);
 
             foreach (var dataset in datasets)
             {
@@ -56,9 +54,9 @@ namespace SecretSharing
             sbyte[,] trainingUserItemMatrix = null;
             sbyte[,] testingUserItemMatrix = null;
             double[,] similarityMatrix = null;
-            List<double[,]> RShares = null;
-            List<double[,]> SqRShare = null;
-            List<double[,]> XiRShares = null;
+            List<uint[,]> RShares = null;
+            List<uint[,]> SqRShare = null;
+            List<uint[,]> XiRShares = null;
             List<sbyte[,]> R_ks;
 
 
@@ -94,14 +92,14 @@ namespace SecretSharing
 
                 var sm = Protocols.GetSimilarityVectorForTopSimilarItemsToM(similarityMatrix, m, q, true);
 
-                List<double[]> RnShares = new List<double[]>();
+                List<uint[]> RnShares = new List<uint[]>();
                 for (int shareCount = 0; shareCount < RShares.Count; shareCount++)
                 {
                     RnShares.Add(RShares[shareCount].GetHorizontalVector(n));
                 }
                 double Unm = Protocols.MultiplySharesByVector(RnShares, sm);
 
-                List<double[]> XiRnShares = new List<double[]>();
+                List<uint[]> XiRnShares = new List<uint[]>();
                 for (int shareCount = 0; shareCount < RShares.Count; shareCount++)
                 {
                     XiRnShares.Add(XiRShares[shareCount].GetHorizontalVector(n));

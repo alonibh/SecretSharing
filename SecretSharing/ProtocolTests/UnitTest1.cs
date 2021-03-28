@@ -38,14 +38,14 @@ namespace ProtocolTests
 
             var sm = Protocols.GetSimilarityVectorForTopSimilarItemsToM(similarityMatrix, m, q, true);
 
-            List<double[]> RnShares = new List<double[]>();
+            List<uint[]> RnShares = new List<uint[]>();
             for (int shareCount = 0; shareCount < RShares.Count; shareCount++)
             {
                 RnShares.Add(RShares[shareCount].GetHorizontalVector(n));
             }
             double Unm = Protocols.MultiplySharesByVector(RnShares, sm);
 
-            List<double[]> XiRnShares = new List<double[]>();
+            List<uint[]> XiRnShares = new List<uint[]>();
             for (int shareCount = 0; shareCount < RShares.Count; shareCount++)
             {
                 XiRnShares.Add(XiRShares[shareCount].GetHorizontalVector(n));

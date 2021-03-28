@@ -5,10 +5,10 @@ namespace SecretSharing
 {
     public class SimilarityMatrixAndShares
     {
-        public List<double[,]> RShares { get; set; }
-        public List<double[,]> SqRShares { get; set; }
-        public List<double[,]> XiRShares { get; set; }
         public double[,] SimilarityMatrix { get; set; }
+        public List<uint[,]> RShares { get; set; }
+        public List<uint[,]> SqRShares { get; set; }
+        public List<uint[,]> XiRShares { get; set; }
         public TimeSpan EachMediatorTime { get; set; }
         public TimeSpan VendorTime { get; set; }
     }
