@@ -18,7 +18,7 @@ namespace SecretSharing
             int q = 80; // num of similar items
             int h = 20; // num of most recomended items to take
 
-            MeasureOfflinePart1("10M", k: 1, D: 3);
+            MeasureOfflinePart1("1M", k: 1, D: 3);
             return;
 
             foreach (var dataset in datasets)
