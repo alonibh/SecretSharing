@@ -11,7 +11,7 @@ namespace SecretSharing
     {
         static void Main()
         {
-            string[] datasets = new string[2] { "100K", "1M" }; //test, "10M"
+            string[] datasets = new string[3] { "100K", "1M", "10M" }; //test, "10M"
             // k - vendors
             // D - mediators
             int q = 80; // num of similar items
@@ -19,14 +19,62 @@ namespace SecretSharing
 
             foreach (var dataset in datasets)
             {
-                MeasureOfflinePart1(dataset, k: 1, D: 3);
-                MeasureOfflinePart1(dataset, k: 1, D: 5);
-                MeasureOfflinePart1(dataset, k: 1, D: 7);
-                MeasureOfflinePart1(dataset, k: 1, D: 9);
+                MeasureOfflinePart1(dataset, k: 1, D: 3, q);
+                return;
+                MeasureOfflinePart1(dataset, k: 1, D: 5, q);
+                MeasureOfflinePart1(dataset, k: 1, D: 7, q);
+                MeasureOfflinePart1(dataset, k: 1, D: 9, q);
             }
 
             //RunTestOldVersion(dataset, k: 1, D: 9, q, h, 5);
             //RunTest(dataset, k: 2, D: 3, q, h);
+        }
+        static void MeasureOfflinePart1(string dataset, int k, int D, int q)
+        {
+            Console.WriteLine($"Dataset - {dataset}, k={k}, D={D} Started");
+
+            string directoryName = $"k-{k}, D-{D}, Dataset-{dataset}/";
+            string fileName = directoryName + "MeasureOfflinePart1.txt";
+            Directory.CreateDirectory(directoryName);
+            File.AppendAllLines(fileName, new string[1] { $"Database - {dataset}, k={k} D={D}" });
+
+            #region Settings
+
+            sbyte[,] userItemMatrix = Protocols.ReadUserItemMatrix($"ratings-distict-{dataset}.dat");
+
+            int N = userItemMatrix.GetLength(0); // users
+            int M = userItemMatrix.GetLength(1); // items
+
+            if (D != 3 && D != 5 && D != 7 && D != 9)
+            {
+                throw new Exception("Number of mediators must be 3, 5, 7 or 9");
+            }
+
+            #endregion
+
+            #region Computing the similarity matrix and the shares (Protocol 1+2)
+
+            Console.WriteLine("MeasureOfflinePart1");
+
+            Protocols.SimulateSingleVendorWorkInComputingSimilarityMatrix(userItemMatrix, D, fileName);
+
+            sbyte[,] sq = userItemMatrix.CalcSq();
+            sbyte[,] xi = userItemMatrix.CalcXi();
+            var someRShare = Protocols.ShamirSecretSharingMatrix(userItemMatrix, D)[0];
+            var someXiRShare = Protocols.ShamirSecretSharingMatrix(xi, D)[0];
+            var someSqRShare = Protocols.ShamirSecretSharingMatrix(sq, D)[0];
+
+            Protocols.SimulateSingleMediatorWorkInComputingSimilarityMatrix(someRShare, someXiRShare, someSqRShare, D, fileName);
+
+            #endregion
+
+            Console.WriteLine("MeasureOfflinePart2");
+
+            fileName = directoryName + "MeasureOfflinePart2.txt";
+
+            Protocols.SimulateSingleMediatorWorkInComputingOfflinePart2(D, userItemMatrix, q, fileName);
+
+
         }
 
         static void RunTest(string dataset, int k, int D, int q, int h)
@@ -164,47 +212,6 @@ namespace SecretSharing
             var valueAndIndexArray = valueAndIndex.ToArray();
             Array.Sort(valueAndIndexArray, new ScoreAndIndexComparer());
             int[] mostRecommendedItems = valueAndIndexArray.Take(h).Select(o => o.Item2).ToArray();
-
-            #endregion
-        }
-
-        static void MeasureOfflinePart1(string dataset, int k, int D)
-        {
-            Console.WriteLine($"MeasureOfflinePart1, Dataset - {dataset}, k={k}, D={D} Started");
-
-            string directoryName = $"k-{k}, D-{D}, Dataset-{dataset}/";
-            string fileName = directoryName + "MeasureOfflinePart1.txt";
-            Directory.CreateDirectory(directoryName);
-            File.AppendAllLines(fileName, new string[1] { $"Database - {dataset}, k={k} D={D}" });
-
-            #region Settings
-
-            sbyte[,] userItemMatrix = Protocols.ReadUserItemMatrix($"ratings-distict-{dataset}.dat");
-
-            int N = userItemMatrix.GetLength(0); // users
-            int M = userItemMatrix.GetLength(1); // items
-
-            if (D != 3 && D != 5 && D != 7 && D != 9)
-            {
-                throw new Exception("Number of mediators must be 3, 5, 7 or 9");
-            }
-
-            #endregion
-
-            #region Computing the similarity matrix and the shares (Protocol 1+2)
-
-            List<sbyte[,]> R_ks;
-
-            R_ks = Protocols.SplitUserItemMatrixBetweenVendors(userItemMatrix, k);
-
-            var res = Protocols.CalcSimilarityMatrix(R_ks, D);
-
-            Console.WriteLine($"Average runtime for vendor is {res.VendorTime.ToCustomTimeSpanFormat()}");
-            Console.WriteLine($"Average runtime for each mediator is {res.EachMediatorTime.ToCustomTimeSpanFormat()}");
-            Console.WriteLine($"MeasureOfflinePart1, k={k}, D={D} Done");
-
-            File.AppendAllLines(fileName, new string[1] { $"Average runtime for vendor is {res.VendorTime.ToCustomTimeSpanFormat()}" });
-            File.AppendAllLines(fileName, new string[1] { $"Average runtime for each mediator is {res.EachMediatorTime.ToCustomTimeSpanFormat()}" });
 
             #endregion
         }

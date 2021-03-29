@@ -266,6 +266,39 @@ namespace SecretSharing
             return xiMatrix;
         }
 
+        public static uint[] GetXi(this uint[] vector)
+        {
+            int length = vector.Length;
+            uint[] xiVector = new uint[length];
+
+            for (int i = 0; i < length; i++)
+            {
+                if (vector[i] == 0)
+                {
+                    xiVector[i] = 0;
+                }
+                else
+                {
+                    xiVector[i] = 1;
+                }
+            }
+
+            return xiVector;
+        }
+
+        public static uint[] GetSq(this uint[] vector)
+        {
+            int length = vector.Length;
+            uint[] sqVector = new uint[length];
+
+            for (int i = 0; i < length; i++)
+            {
+                sqVector[i] = sqVector[i] * sqVector[i];
+            }
+
+            return sqVector;
+        }
+
         public static sbyte[] GetXi(this sbyte[] vector)
         {
             int length = vector.Length;
@@ -663,7 +696,7 @@ namespace SecretSharing
             }
         }
 
-        public static string ToCustomTimeSpanFormat(this TimeSpan timespan, bool includeMs = false)
+        public static string ToCustomTimeSpanFormat(this TimeSpan timespan, bool includeMs = true)
         {
             string formatted = $"{timespan.Hours}h {timespan.Minutes}m {timespan.Seconds}s";
             if (includeMs)

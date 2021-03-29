@@ -111,6 +111,262 @@ namespace SecretSharing
             return R_ks;
         }
 
+        public static void SimulateSingleMediatorWorkInComputingOfflinePart2(int numOfShares, sbyte[,] userItemMatrix, int q, string fileName)
+        {
+            int N = userItemMatrix.GetLength(0);
+            int M = userItemMatrix.GetLength(1);
+
+            List<uint[]> ratingVectors = new List<uint[]>();
+            for (int i = 0; i < 100; i++)
+            {
+                var ratingVector = new uint[N];
+                for (int j = 0; j < N; j++)
+                {
+                    ratingVector[j] = (uint)random.Next(0, 6);
+                }
+                ratingVectors.Add(ratingVector);
+            }
+
+            List<double[]>[] ratingVectorsSharesArray = new List<double[]>[100];
+            List<double[]>[] XiRatingVectorsSharesArray = new List<double[]>[100];
+
+            for (int i = 0; i < 100; i++)
+            {
+                var ratingVector = ratingVectors[i];
+
+                var ratingVectorShares = ShamirSecretSharing(ratingVector, numOfShares);
+                ratingVectorsSharesArray[i] = ratingVectorShares;
+
+                var XiRatingVectorShares = ShamirSecretSharing(ratingVector.GetXi(), numOfShares);
+                XiRatingVectorsSharesArray[i] = XiRatingVectorShares;
+            }
+
+            List<double>[] Xds = new List<double>[100];
+            List<double>[] Yds = new List<double>[100];
+
+            var XWatch = Stopwatch.StartNew();
+
+            for (int itemIndex = 0; itemIndex < 100; itemIndex++)
+            {
+                foreach (var share in ratingVectorsSharesArray[itemIndex])
+                {
+                    if (Xds[itemIndex] == null)
+                    {
+                        Xds[itemIndex] = new List<double>();
+                    }
+                    Xds[itemIndex].Add(share.Sum());
+                }
+
+                foreach (var share in XiRatingVectorsSharesArray[itemIndex])
+                {
+                    if (Yds[itemIndex] == null)
+                    {
+                        Yds[itemIndex] = new List<double>();
+                    }
+                    Yds[itemIndex].Add(share.Sum());
+                }
+            }
+
+            XWatch.Stop();
+            var XTime = new TimeSpan(0, 0, 0, 0, (int)XWatch.ElapsedMilliseconds);
+            XTime = (XTime * M) / (100 * numOfShares);
+            File.AppendAllLines(fileName, new string[1] { $"X time is: {XTime.ToCustomTimeSpanFormat()}" });
+
+
+            var YWatch = Stopwatch.StartNew();
+
+            double[] averageRatings = new double[100];
+
+            for (int itemIndex = 0; itemIndex < 100; itemIndex++)
+            {
+                List<ulong> xCoordinates = new List<ulong>();
+
+                foreach (var xd in Xds[itemIndex])
+                {
+                    xCoordinates.Add((ulong)xd);
+                }
+                var x = ReconstructShamirSecret(xCoordinates);
+
+                List<ulong> yCoordinates = new List<ulong>();
+                foreach (var yd in Yds[itemIndex])
+                {
+                    yCoordinates.Add((ulong)yd);
+                }
+                var y = ReconstructShamirSecret(yCoordinates);
+
+                if (y != 0)
+                {
+                    averageRatings[itemIndex] = x / y;
+                }
+            }
+
+            YWatch.Stop();
+            var YTime = new TimeSpan(0, 0, 0, 0, (int)YWatch.ElapsedMilliseconds);
+            YTime = (YTime * M) / (100 * numOfShares);
+            File.AppendAllLines(fileName, new string[1] { $"Y time is: {YTime.ToCustomTimeSpanFormat()}" });
+
+            var similarityMatrix = CalcSimilarityMatrixNoCrypto(userItemMatrix);
+            averageRatings = new double[M];
+
+            for (int i = 0; i < M; i++)
+            {
+                averageRatings[i] = random.NextDouble() * 5;
+            }
+
+            var ZWatch = Stopwatch.StartNew();
+
+            for (int m = 0; m < M; m++)
+            {
+                var sm = GetSimilarityVectorForTopSimilarItemsToM(similarityMatrix, m, q, true);
+                var sTagM = GetSimilarityVectorForTopSimilarItemsToM(similarityMatrix, m, q, false);
+                var temp = sTagM;
+                double[] cl = new double[averageRatings.Length];
+                for (int i = 0; i < cl.Length; i++)
+                {
+                    cl[i] = Math.Round(Q * sm[i] * averageRatings[i], 0);
+                }
+            }
+
+            ZWatch.Stop();
+            var ZTime = new TimeSpan(0, 0, 0, 0, (int)ZWatch.ElapsedMilliseconds);
+            ZTime = ZTime / numOfShares;
+            File.AppendAllLines(fileName, new string[1] { $"Z time is: {ZTime.ToCustomTimeSpanFormat()}" });
+
+            File.AppendAllLines(fileName, new string[1] { $"Total time for each mediator computing offline part 2: {(XTime + YTime + ZTime).ToCustomTimeSpanFormat()}" });
+
+        }
+
+        public static void SimulateSingleVendorWorkInComputingSimilarityMatrix(sbyte[,] Rk, int numOfShares, string fileName)
+        {
+            var vendorWatch = Stopwatch.StartNew();
+
+            sbyte[,] sq = Rk.CalcSq();
+            sbyte[,] xi = Rk.CalcXi();
+
+            ShamirSecretSharingMatrix(Rk, numOfShares);
+            ShamirSecretSharingMatrix(sq, numOfShares);
+            ShamirSecretSharingMatrix(xi, numOfShares);
+
+            vendorWatch.Stop();
+            var vendorTime = new TimeSpan(0, 0, 0, 0, (int)vendorWatch.ElapsedMilliseconds);
+
+            File.AppendAllLines(fileName, new string[1] { $"Total time for a single vendor computing the similarity matrix: {vendorTime.ToCustomTimeSpanFormat()}" });
+        }
+
+        public static void SimulateSingleMediatorWorkInComputingSimilarityMatrix(uint[,] someRShare, uint[,] someXiRShare, uint[,] someSqRShare, int numOfShares, string fileName)
+        {
+            int N = someRShare.GetLength(0);
+            int M = someRShare.GetLength(1);
+
+            var lines7To9Watch = Stopwatch.StartNew();
+
+            uint[,] RShare = new uint[N, M];
+            uint[,] SqRShare = new uint[N, M];
+            uint[,] XiRShare = new uint[N, M];
+
+            RShare = RShare.AddShare(someRShare).ApplyModulo(PRIME);
+            SqRShare = SqRShare.AddShare(someXiRShare).ApplyModulo(PRIME);
+            XiRShare = XiRShare.AddShare(someSqRShare).ApplyModulo(PRIME);
+            lines7To9Watch.Stop();
+            var lines7To9Time = new TimeSpan(0, 0, 0, 0, (int)lines7To9Watch.ElapsedMilliseconds);
+
+            File.AppendAllLines(fileName, new string[1] { $"Lines 7 to 9 took for each mediator: {lines7To9Time.ToCustomTimeSpanFormat()}" });
+
+            // In order to prevent skipping
+            var a = RShare;
+            a = SqRShare;
+            a = XiRShare;
+
+            List<uint[]> Cms = new List<uint[]>();
+            List<uint[]> Cls = new List<uint[]>();
+
+            for (int i = 0; i < 100; i++)
+            {
+                uint[] cm = new uint[N];
+                uint[] cl = new uint[N];
+
+                for (int j = 0; j < N; j++)
+                {
+                    cm[j] = (uint)random.Next(0, 6);
+                    cl[j] = (uint)random.Next(0, 6);
+                }
+                Cms.Add(cm);
+                Cls.Add(cl);
+            }
+
+            List<double[]>[] cmSharesArray = new List<double[]>[100];
+            List<double[]>[] XiCmSharesArray = new List<double[]>[100];
+            List<double[]>[] SqCmSharesArray = new List<double[]>[100];
+
+            List<double[]>[] clSharesArray = new List<double[]>[100];
+            List<double[]>[] XiClSharesArray = new List<double[]>[100];
+            List<double[]>[] SqClSharesArray = new List<double[]>[100];
+
+
+            for (int i = 0; i < 100; i++)
+            {
+                var cm = Cms[i];
+
+                var cmShares = ShamirSecretSharing(cm, numOfShares);
+                cmSharesArray[i] = cmShares;
+
+                var XiCmShares = ShamirSecretSharing(cm.GetXi(), numOfShares);
+                XiCmSharesArray[i] = XiCmShares;
+
+                var SqCmShares = ShamirSecretSharing(cm.GetSq(), numOfShares);
+                SqCmSharesArray[i] = SqCmShares;
+
+
+                var cl = Cls[i];
+
+                var clShares = ShamirSecretSharing(cl, numOfShares);
+                clSharesArray[i] = clShares;
+
+                var XiClShares = ShamirSecretSharing(cl.GetXi(), numOfShares);
+                XiClSharesArray[i] = XiClShares;
+
+                var SqClShares = ShamirSecretSharing(cl.GetSq(), numOfShares);
+                SqClSharesArray[i] = SqClShares;
+            }
+
+
+            var lines12To21Watch = Stopwatch.StartNew();
+
+            for (int i = 0; i < 100; i++)
+            {
+                Parallel.For(0, 100, (j) =>
+                {
+                    double similarityScore = 0;
+
+                    double z1 = ScalarProductShares(clSharesArray[i], clSharesArray[j]);
+
+                    double z2 = ScalarProductShares(SqClSharesArray[i], XiClSharesArray[j]);
+
+                    double z3 = ScalarProductShares(XiClSharesArray[i], SqClSharesArray[j]);
+
+                    var mult = z2 * z3;
+                    if (mult != 0)
+                    {
+                        similarityScore = z1 / (Math.Sqrt(mult));
+                    }
+
+                    if (similarityScore != 0)
+                    {
+                        //Convert to integer value
+                        var res = Math.Floor((similarityScore * Q) + 0.5);
+                        var temp = res;
+                    }
+                });
+            }
+
+            lines12To21Watch.Stop();
+            var lines12To21Time = new TimeSpan(0, 0, 0, 0, (int)lines12To21Watch.ElapsedMilliseconds);
+            lines12To21Time = lines12To21Time * M * (M - 1) / 20000;
+            File.AppendAllLines(fileName, new string[1] { $"Lines 12 to 21 took for each mediator: {lines12To21Time.ToCustomTimeSpanFormat()}" });
+
+            File.AppendAllLines(fileName, new string[1] { $"Total time for each mediator computing the similarity matrix: {(lines12To21Time + lines7To9Time).ToCustomTimeSpanFormat()}" });
+        }
+
         public static SimilarityMatrixAndShares CalcSimilarityMatrix(List<sbyte[,]> R_ks, int numOfMediators)
         {
             var mediatorsWatch = new Stopwatch();
@@ -407,7 +663,7 @@ namespace SecretSharing
             var shares = new List<uint[,]>();
             int N = matrix.GetLength(0);
             int M = matrix.GetLength(1);
-            int maxRangeForRandom = 65536; //65536
+            int maxRangeForRandom = 65536;
 
             for (int i = 0; i < numOfShares; i++)
             {
@@ -827,6 +1083,204 @@ namespace SecretSharing
             return shares;
         }
 
+        public static List<double[]> ShamirSecretSharing(uint[] vector, int numOfShares)
+        {
+            int maxRangeForRandom = 65536;
+            var shares = new List<double[]>();
+            for (int i = 0; i < numOfShares; i++)
+            {
+                shares.Add(new double[vector.Length]);
+            }
+
+            if (numOfShares == 3)
+            {
+                int shareCount = 0;
+                foreach (int entry in vector)
+                {
+                    double a = random.Next(2, maxRangeForRandom);
+                    double lastY = entry;
+
+                    for (int i = 0; i < 3; i++)
+                    {
+                        var y = lastY + a;
+                        lastY = y;
+
+                        shares[i][shareCount] = y;
+                    }
+                    shareCount++;
+                }
+            }
+
+            else if (numOfShares == 5)
+            {
+                int shareCount = 0;
+                foreach (double entry in vector)
+                {
+                    double a = random.Next(2, maxRangeForRandom);
+                    double b = random.Next(2, maxRangeForRandom);
+
+                    double B = a + b;
+                    double B2 = b + b;
+                    double B3 = B + B2;
+                    double B5 = B3 + B2;
+                    double B7 = B5 + B2;
+                    double B9 = B7 + B2;
+                    double lastY = 0;
+
+                    for (int i = 0; i < 5; i++)
+                    {
+                        double y = 0;
+                        switch (i)
+                        {
+                            case 0:
+                                y = entry + B;
+                                break;
+                            case 1:
+                                y = lastY + B3;
+                                break;
+                            case 2:
+                                y = lastY + B5;
+                                break;
+                            case 3:
+                                y = lastY + B7;
+                                break;
+                            case 4:
+                                y = lastY + B9;
+                                break;
+                        }
+                        lastY = y;
+
+                        shares[i][shareCount] = y;
+                    }
+                    shareCount++;
+                }
+            }
+
+            else if (numOfShares == 7)
+            {
+                int shareCount = 0;
+                foreach (double entry in vector)
+                {
+                    double a = random.Next(2, maxRangeForRandom);
+                    double b = random.Next(2, maxRangeForRandom);
+                    double c = random.Next(2, maxRangeForRandom);
+
+                    double B = a + b + c;
+                    double B1 = 6 * c;
+                    double B2 = 2 * b;
+                    double B3 = B + B2 + B1;
+                    double B5 = B3 + B2 + 2 * B1;
+                    double B7 = B5 + B2 + 3 * B1;
+                    double B9 = B7 + B2 + 4 * B1;
+                    double B11 = B9 + B2 + 5 * B1;
+                    double B13 = B11 + B2 + 6 * B1;
+
+                    double lastY = 0;
+
+                    for (int i = 0; i < 7; i++)
+                    {
+                        double y = 0;
+                        switch (i)
+                        {
+                            case 0:
+                                y = entry + B;
+                                break;
+                            case 1:
+                                y = lastY + B3;
+                                break;
+                            case 2:
+                                y = lastY + B5;
+                                break;
+                            case 3:
+                                y = lastY + B7;
+                                break;
+                            case 4:
+                                y = lastY + B9;
+                                break;
+                            case 5:
+                                y = lastY + B11;
+                                break;
+                            case 6:
+                                y = lastY + B13;
+                                break;
+                        }
+                        lastY = y;
+
+                        shares[i][shareCount] = y;
+                    }
+                    shareCount++;
+                }
+            }
+
+            else if (numOfShares == 9)
+            {
+                int shareCount = 0;
+                foreach (double entry in vector)
+                {
+                    double a = random.Next(2, maxRangeForRandom);
+                    double b = random.Next(2, maxRangeForRandom);
+                    double c = random.Next(2, maxRangeForRandom);
+                    double d = random.Next(2, maxRangeForRandom);
+
+                    double B = a + b + c + d;
+                    double B1 = 2 * d;
+                    double B2 = 6 * c;
+                    double B3 = 2 * b;
+                    double B5 = B + B3 + B2 + 7 * B1;
+                    double B7 = B5 + B3 + 2 * B2 + 25 * B1;
+                    double B9 = B7 + B3 + 3 * B2 + 55 * B1;
+                    double B11 = B9 + B3 + 4 * B2 + 97 * B1;
+                    double B13 = B11 + B3 + 5 * B2 + 151 * B1;
+                    double B15 = B13 + B3 + 6 * B2 + 217 * B1;
+                    double B17 = B15 + B3 + 7 * B2 + 295 * B1;
+                    double B19 = B17 + B3 + 8 * B2 + 385 * B1;
+
+                    double lastY = 0;
+
+                    for (int i = 0; i < 9; i++)
+                    {
+                        double y = 0;
+                        switch (i)
+                        {
+                            case 0:
+                                y = entry + B;
+                                break;
+                            case 1:
+                                y = lastY + B5;
+                                break;
+                            case 2:
+                                y = lastY + B7;
+                                break;
+                            case 3:
+                                y = lastY + B9;
+                                break;
+                            case 4:
+                                y = lastY + B11;
+                                break;
+                            case 5:
+                                y = lastY + B13;
+                                break;
+                            case 6:
+                                y = lastY + B15;
+                                break;
+                            case 7:
+                                y = lastY + B17;
+                                break;
+                            case 8:
+                                y = lastY + B19;
+                                break;
+                        }
+                        lastY = y;
+
+                        shares[i][shareCount] = y;
+                    }
+                    shareCount++;
+                }
+            }
+
+            return shares;
+        }
+
         /// <summary>
         /// Protocol 2 - Computing the scalar product between two vectors that are shared between D mediators
         /// </summary>
@@ -1009,7 +1463,7 @@ namespace SecretSharing
             List<double> Xds = new List<double>();
             foreach (var share in RShares)
             {
-                Xds.Add(share.GetVerticalVector(m).Select(o=>(double)o).Sum());
+                Xds.Add(share.GetVerticalVector(m).Select(o => (double)o).Sum());
             }
 
             List<double> Yds = new List<double>();
