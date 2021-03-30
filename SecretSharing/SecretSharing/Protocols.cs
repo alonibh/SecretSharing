@@ -267,6 +267,7 @@ namespace SecretSharing
             RShare = RShare.AddShare(someRShare).ApplyModulo(PRIME);
             SqRShare = SqRShare.AddShare(someXiRShare).ApplyModulo(PRIME);
             XiRShare = XiRShare.AddShare(someSqRShare).ApplyModulo(PRIME);
+
             lines7To9Watch.Stop();
             var lines7To9Time = new TimeSpan(0, 0, 0, 0, (int)lines7To9Watch.ElapsedMilliseconds);
 
@@ -365,6 +366,76 @@ namespace SecretSharing
             File.AppendAllLines(fileName, new string[1] { $"Lines 12 to 21 took for each mediator: {lines12To21Time.ToCustomTimeSpanFormat()}" });
 
             File.AppendAllLines(fileName, new string[1] { $"Total time for each mediator computing the similarity matrix: {(lines12To21Time + lines7To9Time).ToCustomTimeSpanFormat()}" });
+        }
+
+        public static void SimulateSingleMediatorWorkInOnlinePredictRating(int numberOfItems, int numOfShares, string fileName)
+        {
+            List<uint[]> smVectors = new List<uint[]>();
+            for (int i = 0; i < 100; i++)
+            {
+                var smVector = new uint[numberOfItems];
+                for (int j = 0; j < numberOfItems; j++)
+                {
+                    smVector[j] = (uint)random.Next(0, 6);
+                }
+                smVectors.Add(smVector);
+            }
+
+            List<double[]>[] sharesArray = new List<double[]>[100];
+
+            for (int i = 0; i < 100; i++)
+            {
+                var smVector = smVectors[i];
+
+                var smShares = ShamirSecretSharing(smVector, numOfShares);
+                sharesArray[i] = smShares;
+            }
+
+            double[] vector = new double[numberOfItems];
+            for (int i = 0; i < numberOfItems; i++)
+            {
+                vector[i] = random.Next(0, 6);
+            }
+
+            var XWatch = new Stopwatch();
+            var YWatch = new Stopwatch();
+
+            foreach (var shares in sharesArray)
+            {
+                List<ulong> xds = new List<ulong>();
+
+                XWatch.Start();
+
+                foreach (var share in shares)
+                {
+                    double xd = 0;
+                    for (int itemCounter = 0; itemCounter < vector.Length; itemCounter++)
+                    {
+                        xd += share[itemCounter] * vector[itemCounter];
+                    }
+                    xd = Math.Round(xd, 0);
+                    xds.Add((ulong)xd);
+                }
+
+                XWatch.Stop();
+
+                YWatch.Start();
+
+                var secret = ReconstructShamirSecret(xds);
+                var temp = secret;
+
+                YWatch.Stop();
+            }
+
+            var XTime = new TimeSpan(0, 0, 0, 0, (int)XWatch.ElapsedMilliseconds);
+            XTime = XTime / 100;
+            File.AppendAllLines(fileName, new string[1] { $"X time is: {XTime.ToCustomTimeSpanFormat()}" });
+
+            var YTime = new TimeSpan(0, 0, 0, 0, (int)YWatch.ElapsedMilliseconds);
+            YTime = YTime / 100;
+            File.AppendAllLines(fileName, new string[1] { $"Y time is: {YTime.ToCustomTimeSpanFormat()}" });
+
+            File.AppendAllLines(fileName, new string[1] { $"Total time for each mediator computing online predict rating: {(3 * (XTime + YTime)).ToCustomTimeSpanFormat()}" });
         }
 
         public static SimilarityMatrixAndShares CalcSimilarityMatrix(List<sbyte[,]> R_ks, int numOfMediators)
@@ -1375,7 +1446,6 @@ namespace SecretSharing
             return Xd.ToArray();
         }
 
-
         public static int[] GetItemsOfferedByVendor(sbyte[,] Rk)
         {
             List<int> itemIndecis = new List<int>();
@@ -1599,7 +1669,6 @@ namespace SecretSharing
 
             return sum % PRIME;
         }
-
 
         public static double ReconstructShamirSecret(List<ulong> coordinates)
         {

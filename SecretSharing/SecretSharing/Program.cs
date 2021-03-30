@@ -20,7 +20,6 @@ namespace SecretSharing
             foreach (var dataset in datasets)
             {
                 MeasureOfflinePart1(dataset, k: 1, D: 3, q);
-                return;
                 MeasureOfflinePart1(dataset, k: 1, D: 5, q);
                 MeasureOfflinePart1(dataset, k: 1, D: 7, q);
                 MeasureOfflinePart1(dataset, k: 1, D: 9, q);
@@ -68,12 +67,25 @@ namespace SecretSharing
 
             #endregion
 
+            #region MeasureOfflinePart2
+
             Console.WriteLine("MeasureOfflinePart2");
 
             fileName = directoryName + "MeasureOfflinePart2.txt";
 
             Protocols.SimulateSingleMediatorWorkInComputingOfflinePart2(D, userItemMatrix, q, fileName);
 
+            #endregion
+
+            #region MeasureOnlinePredictRating
+
+            Console.WriteLine("MeasureOnlinePredictRating");
+
+            fileName = directoryName + "MeasureOnlinePredictRating.txt";
+
+            Protocols.SimulateSingleMediatorWorkInOnlinePredictRating(M, D, fileName);
+
+            #endregion
 
         }
 
