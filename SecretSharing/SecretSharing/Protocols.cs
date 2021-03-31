@@ -438,6 +438,98 @@ namespace SecretSharing
             File.AppendAllLines(fileName, new string[1] { $"Total time for each mediator computing online predict rating: {(3 * (XTime + YTime)).ToCustomTimeSpanFormat()}" });
         }
 
+        public static void SimulateSingleMediatorWorkInOnlinePredictRanking(int M, int q, string fileName)
+        {
+            var XWatch = Stopwatch.StartNew();
+
+            var permutation = CreatePermutation(M);
+            var temp = permutation;
+
+            XWatch.Stop();
+            var XTime = new TimeSpan(0, 0, 0, 0, (int)XWatch.ElapsedMilliseconds);
+            File.AppendAllLines(fileName, new string[1] { $"X time is: {XTime.ToCustomTimeSpanFormat()}" });
+
+            int[] topItemsSimilarityVector = new int[M];
+            for (int i = 0; i < q; i++)
+            {
+                topItemsSimilarityVector[i] = random.Next(0, 100);
+            }
+
+            int[] xiRVector = new int[M];
+            for (int i = 0; i < M; i++)
+            {
+                xiRVector[i] = random.Next(0, (int)PRIME);
+            }
+
+            var YWatch = Stopwatch.StartNew();
+
+            for (int i = 0; i < 100; i++)
+            {
+                List<ulong> Xd = new List<ulong>();
+                List<double> XdShares = new List<double>();
+                List<double> oneMinusXiShares = new List<double>();
+                double addon = Q * q + 1;
+                for (int itemIndex = 0; itemIndex < M; itemIndex++)
+                {
+                    double Xdm = addon;
+                    Xdm += ScalarProductVectors(topItemsSimilarityVector, xiRVector);
+                    XdShares.Add(Xdm);
+                    oneMinusXiShares.Add(1 - xiRVector[itemIndex]);
+                }
+
+                for (int shareIndex = 0; shareIndex < XdShares.Count; shareIndex++)
+                {
+                    long mult = (long)(XdShares[shareIndex] * oneMinusXiShares[shareIndex]);
+                    var mod = ModForNegative(mult);
+                    Xd.Add(mod);
+                }
+            }
+
+            YWatch.Stop();
+            var YTime = new TimeSpan(0, 0, 0, 0, (int)YWatch.ElapsedMilliseconds);
+            YTime = YTime / 100;
+            File.AppendAllLines(fileName, new string[1] { $"Y*|M| time is: {YTime.ToCustomTimeSpanFormat()}" });
+
+            File.AppendAllLines(fileName, new string[1] { $"Total time for each mediator computing online predict ranking: {(XTime + YTime).ToCustomTimeSpanFormat()}" });
+        }
+
+        public static void SimulateSingleVendorWorkInOnlinePredictRanking(int M, int numberOfShares, int h, string fileName)
+        {
+            var vendorWatch = new Stopwatch();
+            for (int i = 0; i < 100; i++)
+            {
+                List<ulong> coordinates = new List<ulong>(numberOfShares);
+                for (int j = 0; j < M; j++)
+                {
+                    coordinates.Add((ulong)random.Next(0, (int)PRIME));
+                }
+
+                vendorWatch.Start();
+
+                ReconstructShamirSecret(coordinates);
+                coordinates.Sort();
+                var top = coordinates.Take(h);
+                var temp = top;
+
+                vendorWatch.Stop();
+            }
+
+            vendorWatch.Stop();
+            var vendorTime = new TimeSpan(0, 0, 0, 0, (int)vendorWatch.ElapsedMilliseconds);
+            vendorTime = vendorTime / 100;
+
+            File.AppendAllLines(fileName, new string[1] { $"Total time for a single vendor computing online predict ranking: {vendorTime.ToCustomTimeSpanFormat()}" });
+        }
+
+        public static int[] CreatePermutation(int size)
+        {
+            int[] array = Enumerable.Range(0, size).ToArray();
+
+            var permutation = array.OrderBy(x => random.Next()).ToArray();
+
+            return permutation;
+        }
+
         public static SimilarityMatrixAndShares CalcSimilarityMatrix(List<sbyte[,]> R_ks, int numOfMediators)
         {
             var mediatorsWatch = new Stopwatch();
@@ -1644,6 +1736,18 @@ namespace SecretSharing
                 secret[i] = secret[i] % PRIME;
             }
             return secret;
+        }
+
+        public static double ScalarProductVectors(int[] vector1, int[] vector2)
+        {
+            int length = vector1.Length;
+            double sum = 0;
+            for (int i = 0; i < length; i++)
+            {
+                sum += vector1[i] * vector2[i];
+            }
+
+            return sum % PRIME;
         }
 
         public static double ScalarProductVectors(double[] vector1, double[] vector2)

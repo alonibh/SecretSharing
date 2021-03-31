@@ -19,16 +19,16 @@ namespace SecretSharing
 
             foreach (var dataset in datasets)
             {
-                MeasureOfflinePart1(dataset, k: 1, D: 3, q);
-                MeasureOfflinePart1(dataset, k: 1, D: 5, q);
-                MeasureOfflinePart1(dataset, k: 1, D: 7, q);
-                MeasureOfflinePart1(dataset, k: 1, D: 9, q);
+                MeasureOfflinePart1(dataset, k: 1, D: 3, q, h);
+                MeasureOfflinePart1(dataset, k: 1, D: 5, q, h);
+                MeasureOfflinePart1(dataset, k: 1, D: 7, q, h);
+                MeasureOfflinePart1(dataset, k: 1, D: 9, q, h);
             }
 
             //RunTestOldVersion(dataset, k: 1, D: 9, q, h, 5);
             //RunTest(dataset, k: 2, D: 3, q, h);
         }
-        static void MeasureOfflinePart1(string dataset, int k, int D, int q)
+        static void MeasureOfflinePart1(string dataset, int k, int D, int q, int h)
         {
             Console.WriteLine($"Dataset - {dataset}, k={k}, D={D} Started");
 
@@ -84,6 +84,18 @@ namespace SecretSharing
             fileName = directoryName + "MeasureOnlinePredictRating.txt";
 
             Protocols.SimulateSingleMediatorWorkInOnlinePredictRating(M, D, fileName);
+
+            #endregion
+
+            #region MeasureOnlinePredictRanking
+
+            Console.WriteLine("MeasureOnlinePredictRanking");
+
+            fileName = directoryName + "MeasureOnlinePredictRanking.txt";
+
+            Protocols.SimulateSingleMediatorWorkInOnlinePredictRanking(M, q, fileName);
+
+            Protocols.SimulateSingleVendorWorkInOnlinePredictRanking(M, D, h, fileName);
 
             #endregion
 
