@@ -617,24 +617,22 @@ namespace SecretSharing
             return xi;
         }
 
-        public static uint[,] AddShare(this uint[,] matrix, uint[,] share)
+        public static void AddShare(this uint[,] matrix, uint[,] share)
         {
             int N = matrix.GetLength(0);
             int M = matrix.GetLength(1);
-            uint[,] sumMatrix = new uint[N, M];
 
             for (int i = 0; i < N; i++)
             {
                 for (int j = 0; j < M; j++)
                 {
-                    sumMatrix[i, j] = matrix[i, j] + share[i, j];
+                    matrix[i, j] += share[i, j];
                 }
             }
 
-            return sumMatrix;
         }
 
-        public static double[,] AddShare(this double[,] matrix, double[,] share)
+        public static void AddShare(this double[,] matrix, double[,] share)
         {
             int N = matrix.GetLength(0);
             int M = matrix.GetLength(1);
@@ -644,45 +642,37 @@ namespace SecretSharing
             {
                 for (int j = 0; j < M; j++)
                 {
-                    sumMatrix[i, j] = matrix[i, j] + share[i, j];
+                    matrix[i, j] += share[i, j];
                 }
             }
-
-            return sumMatrix;
         }
 
-        public static double[,] ApplyModulo(this double[,] matrix, double modulo)
+        public static void ApplyModulo(this double[,] matrix, double modulo)
         {
             int N = matrix.GetLength(0);
             int M = matrix.GetLength(1);
-            double[,] modMatrix = new double[N, M];
 
             for (int i = 0; i < N; i++)
             {
                 for (int j = 0; j < M; j++)
                 {
-                    modMatrix[i, j] = matrix[i, j] % modulo;
+                    matrix[i, j] %= modulo;
                 }
             }
-
-            return modMatrix;
         }
 
-        public static uint[,] ApplyModulo(this uint[,] matrix, ulong modulo)
+        public static void ApplyModulo(this uint[,] matrix, ulong modulo)
         {
             int N = matrix.GetLength(0);
             int M = matrix.GetLength(1);
-            uint[,] modMatrix = new uint[N, M];
 
             for (int i = 0; i < N; i++)
             {
                 for (int j = 0; j < M; j++)
                 {
-                    modMatrix[i, j] = (uint)(matrix[i, j] % modulo);
+                    matrix[i, j] = (uint)(matrix[i, j] % modulo);
                 }
             }
-
-            return modMatrix;
         }
 
         public static void CopySubMatrix(this sbyte[,] matrix, sbyte[,] subMatrix, int verticalIndexStart)

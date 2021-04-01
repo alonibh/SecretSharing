@@ -28,6 +28,7 @@ namespace SecretSharing
             //RunTestOldVersion(dataset, k: 1, D: 9, q, h, 5);
             //RunTest(dataset, k: 2, D: 3, q, h);
         }
+
         static void MeasureOfflinePart1(string dataset, int k, int D, int q, int h)
         {
             Console.WriteLine($"Dataset - {dataset}, k={k}, D={D} Started");
@@ -57,13 +58,15 @@ namespace SecretSharing
 
             Protocols.SimulateSingleVendorWorkInComputingSimilarityMatrix(userItemMatrix, D, fileName);
 
-            sbyte[,] sq = userItemMatrix.CalcSq();
-            sbyte[,] xi = userItemMatrix.CalcXi();
-            var someRShare = Protocols.ShamirSecretSharingMatrix(userItemMatrix, D)[0];
-            var someXiRShare = Protocols.ShamirSecretSharingMatrix(xi, D)[0];
-            var someSqRShare = Protocols.ShamirSecretSharingMatrix(sq, D)[0];
+            var someRShare = Protocols.CreateRandomMatrixShare(N, M);
+            var someXiRShare = Protocols.CreateRandomMatrixShare(N, M);
+            var someSqRShare = Protocols.CreateRandomMatrixShare(N, M);
 
             Protocols.SimulateSingleMediatorWorkInComputingSimilarityMatrix(someRShare, someXiRShare, someSqRShare, D, fileName);
+
+            someRShare = null;
+            someXiRShare = null;
+            someSqRShare = null;
 
             #endregion
 
