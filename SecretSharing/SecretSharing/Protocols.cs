@@ -317,30 +317,21 @@ namespace SecretSharing
 
             var lines12To21Watch = Stopwatch.StartNew();
 
-            for (int i = 0; i < 100; i++)
+            for (int i = 0; i < 10000; i++)
             {
-                for (int j = 0; j < 100; j++)
+                double similarityScore = 0;
+
+                ulong z1 = ScalarProductShares(clShare, cmShare);
+
+                ulong z2 = ScalarProductShares(SqClShare, XiCmShare);
+
+                ulong z3 = ScalarProductShares(XiClShare, SqCmShare);
+
+                var mult = z2 * z3;
+                if (mult != 0)
                 {
-                    double similarityScore = 0;
-
-                    ulong z1 = ScalarProductShares(clShare, cmShare);
-
-                    ulong z2 = ScalarProductShares(SqClShare, XiCmShare);
-
-                    ulong z3 = ScalarProductShares(XiClShare, SqCmShare);
-
-                    var mult = z2 * z3;
-                    if (mult != 0)
-                    {
-                        similarityScore = z1 / (Math.Sqrt(mult));
-                    }
-
-                    if (similarityScore != 0)
-                    {
-                        //Convert to integer value
-                        var res = Math.Floor((similarityScore * Q) + 0.5);
-                        var temp = res;
-                    }
+                    similarityScore = z1 / (Math.Sqrt(mult));
+                    var res = Math.Floor((similarityScore * Q) + 0.5);
                 }
             }
 
