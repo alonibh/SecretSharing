@@ -214,14 +214,14 @@ namespace SecretSharing
 
                 foreach (var xd in Xds[itemIndex])
                 {
-                    xCoordinates.Add((ulong)xd);
+                    xCoordinates.Add(xd);
                 }
                 var x = ReconstructShamirSecret(xCoordinates);
 
                 List<ulong> yCoordinates = new List<ulong>();
                 foreach (var yd in Yds[itemIndex])
                 {
-                    yCoordinates.Add((ulong)yd);
+                    yCoordinates.Add(yd);
                 }
                 var y = ReconstructShamirSecret(yCoordinates);
 
@@ -251,10 +251,10 @@ namespace SecretSharing
                 var sm = GetSimilarityVectorForTopSimilarItemsToM(similarityMatrix, m, q, true);
                 var sTagM = GetSimilarityVectorForTopSimilarItemsToM(similarityMatrix, m, q, false);
                 var temp = sTagM;
-                double[] cl = new double[averageRatings.Length];
+                ulong[] cl = new ulong[averageRatings.Length];
                 for (int i = 0; i < cl.Length; i++)
                 {
-                    cl[i] = Math.Round(Q * sm[i] * averageRatings[i], 0);
+                    cl[i] = (ulong)Math.Round(Q * sm[i] * averageRatings[i], 0);
                 }
             }
 
@@ -319,7 +319,7 @@ namespace SecretSharing
 
             for (int i = 0; i < 100; i++)
             {
-                Parallel.For(0, 100, (j) =>
+                for (int j = 0; j < 100; j++)
                 {
                     double similarityScore = 0;
 
@@ -341,7 +341,7 @@ namespace SecretSharing
                         var res = Math.Floor((similarityScore * Q) + 0.5);
                         var temp = res;
                     }
-                });
+                }
             }
 
             lines12To21Watch.Stop();
@@ -449,20 +449,20 @@ namespace SecretSharing
             for (int i = 0; i < 100; i++)
             {
                 List<ulong> Xd = new List<ulong>();
-                List<double> XdShares = new List<double>();
-                List<double> oneMinusXiShares = new List<double>();
-                double addon = Q * q + 1;
+                List<long> XdShares = new List<long>();
+                List<long> oneMinusXiShares = new List<long>();
+                long addon = Q * q + 1;
                 for (int itemIndex = 0; itemIndex < M; itemIndex++)
                 {
-                    double Xdm = addon;
-                    Xdm += ScalarProductVectors(topItemsSimilarityVector, xiRVector);
+                    long Xdm = addon;
+                    Xdm += (long)ScalarProductVectors(topItemsSimilarityVector, xiRVector);
                     XdShares.Add(Xdm);
                     oneMinusXiShares.Add(1 - xiRVector[itemIndex]);
                 }
 
                 for (int shareIndex = 0; shareIndex < XdShares.Count; shareIndex++)
                 {
-                    long mult = (long)(XdShares[shareIndex] * oneMinusXiShares[shareIndex]);
+                    long mult = XdShares[shareIndex] * oneMinusXiShares[shareIndex];
                     var mod = ModForNegative(mult);
                     Xd.Add(mod);
                 }
@@ -2290,13 +2290,13 @@ namespace SecretSharing
             return secret;
         }
 
-        public static double ScalarProductVectors(int[] vector1, int[] vector2)
+        public static ulong ScalarProductVectors(int[] vector1, int[] vector2)
         {
             int length = vector1.Length;
-            double sum = 0;
+            ulong sum = 0;
             for (int i = 0; i < length; i++)
             {
-                sum += vector1[i] * vector2[i];
+                sum += (ulong)(vector1[i] * vector2[i]);
             }
 
             return sum % PRIME;
@@ -2430,9 +2430,9 @@ namespace SecretSharing
             return similarityScore;
         }
 
-        public static double[,] CreateRandomMatrix(int m)
+        public static uint[,] CreateRandomMatrix(int m)
         {
-            double[,] similarityMatrix = new double[m, m];
+            uint[,] similarityMatrix = new uint[m, m];
 
             for (int i = 0; i < m; i++)
             {
@@ -2441,8 +2441,8 @@ namespace SecretSharing
 
                     double similarityScore = random.NextDouble();
                     //Convert to integer value
-                    similarityMatrix[i, j] = Math.Floor((similarityScore * Q) + 0.5);
-                    similarityMatrix[j, i] = Math.Floor((similarityScore * Q) + 0.5);
+                    similarityMatrix[i, j] = (uint)Math.Floor((similarityScore * Q) + 0.5);
+                    similarityMatrix[j, i] = (uint)Math.Floor((similarityScore * Q) + 0.5);
                 }
             }
             return similarityMatrix;
@@ -2684,6 +2684,38 @@ namespace SecretSharing
             return sm;
         }
 
+        public static uint[] GetSimilarityVectorForTopSimilarItemsToM(uint[,] similarityMatrix, int m, int q, bool isPositivesOnly)
+        {
+            int vectorLength = similarityMatrix.GetLength(0);
+            Tuple<uint, int>[] similarityScoreAndIndex = new Tuple<uint, int>[vectorLength];
+
+            for (int i = 0; i < vectorLength; i++)
+            {
+                similarityScoreAndIndex[i] = new Tuple<uint, int>(similarityMatrix[m, i], i);
+            }
+
+            Array.Sort(similarityScoreAndIndex, new ScoreAndIndexComparerUint());
+            similarityScoreAndIndex = similarityScoreAndIndex.Take(q).ToArray();
+            uint[] sm = new uint[vectorLength];
+
+            foreach (var item in similarityScoreAndIndex)
+            {
+                if (isPositivesOnly)
+                {
+                    if (item.Item1 > 0)
+                    {
+                        sm[item.Item2] = item.Item1;
+                    }
+                }
+                else
+                {
+                    sm[item.Item2] = item.Item1;
+                }
+            }
+
+            return sm;
+        }
+
         public static int GetPredictedRatingNoCrypto(sbyte[,] userItemMatrix, int n, int m, int q, double[,] similarityMatrixNoCrypto = null)
         {
             var averageRatings = userItemMatrix.GetAverageRatings();
@@ -2768,6 +2800,14 @@ namespace SecretSharing
     public class ScoreAndIndexComparer : IComparer<Tuple<double, int>>
     {
         public int Compare(Tuple<double, int> x, Tuple<double, int> y)
+        {
+            return x.Item1.CompareTo(y.Item1) * -1;
+        }
+    }
+
+    public class ScoreAndIndexComparerUint : IComparer<Tuple<uint, int>>
+    {
+        public int Compare(Tuple<uint, int> x, Tuple<uint, int> y)
         {
             return x.Item1.CompareTo(y.Item1) * -1;
         }

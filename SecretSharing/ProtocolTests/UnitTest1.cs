@@ -255,7 +255,7 @@ namespace ProtocolTests
             List<ulong> coordinates = new List<ulong>();
             foreach (var share in shares)
             {
-                coordinates.Add((ulong)share[0]);
+                coordinates.Add(share[0]);
             }
 
             // ACT
