@@ -701,7 +701,7 @@ namespace SecretSharing
 
         public static string ToCustomTimeSpanFormat(this TimeSpan timespan, bool includeMs = true)
         {
-            string formatted = $"{timespan.Hours}h {timespan.Minutes}m {timespan.Seconds}s";
+            string formatted = $"{timespan.Hours + timespan.Days * 24}h {timespan.Minutes}m {timespan.Seconds}s";
             if (includeMs)
             {
                 formatted += $" {timespan.Milliseconds}ms";
