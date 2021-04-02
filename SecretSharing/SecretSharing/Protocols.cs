@@ -126,16 +126,16 @@ namespace SecretSharing
             return matrix;
         }
 
-        public static List<double[]> CreateRandomShares(int n, int numOfShares)
+        public static List<uint[]> CreateRandomShares(int n, int numOfShares)
         {
-            List<double[]> shares = new List<double[]>();
+            List<uint[]> shares = new List<uint[]>();
             int maxRangeForRandom = 65536;
             for (int i = 0; i < numOfShares; i++)
             {
-                double[] vector = new double[n];
+                uint[] vector = new uint[n];
                 for (int j = 0; j < n; j++)
                 {
-                    vector[j] = random.Next(2, maxRangeForRandom);
+                    vector[j] = (uint)random.Next(2, maxRangeForRandom);
                 }
                 shares.Add(vector);
             }
@@ -158,8 +158,8 @@ namespace SecretSharing
                 ratingVectors.Add(ratingVector);
             }
 
-            List<double[]>[] ratingVectorsSharesArray = new List<double[]>[100];
-            List<double[]>[] XiRatingVectorsSharesArray = new List<double[]>[100];
+            List<uint[]>[] ratingVectorsSharesArray = new List<uint[]>[100];
+            List<uint[]>[] XiRatingVectorsSharesArray = new List<uint[]>[100];
 
             for (int i = 0; i < 100; i++)
             {
@@ -172,8 +172,8 @@ namespace SecretSharing
                 XiRatingVectorsSharesArray[i] = XiRatingVectorShares;
             }
 
-            List<double>[] Xds = new List<double>[100];
-            List<double>[] Yds = new List<double>[100];
+            List<ulong>[] Xds = new List<ulong>[100];
+            List<ulong>[] Yds = new List<ulong>[100];
 
             var XWatch = Stopwatch.StartNew();
 
@@ -183,7 +183,7 @@ namespace SecretSharing
                 {
                     if (Xds[itemIndex] == null)
                     {
-                        Xds[itemIndex] = new List<double>();
+                        Xds[itemIndex] = new List<ulong>();
                     }
                     Xds[itemIndex].Add(share.Sum());
                 }
@@ -192,7 +192,7 @@ namespace SecretSharing
                 {
                     if (Yds[itemIndex] == null)
                     {
-                        Yds[itemIndex] = new List<double>();
+                        Yds[itemIndex] = new List<ulong>();
                     }
                     Yds[itemIndex].Add(share.Sum());
                 }
@@ -307,13 +307,13 @@ namespace SecretSharing
             SqRShare = null;
             XiRShare = null;
 
-            List<double[]> cmShare = CreateRandomShares(N, numOfShares);
-            List<double[]> XiCmShare = CreateRandomShares(N, numOfShares);
-            List<double[]> SqCmShare = CreateRandomShares(N, numOfShares);
+            List<uint[]> cmShare = CreateRandomShares(N, numOfShares);
+            List<uint[]> XiCmShare = CreateRandomShares(N, numOfShares);
+            List<uint[]> SqCmShare = CreateRandomShares(N, numOfShares);
 
-            List<double[]> clShare = CreateRandomShares(N, numOfShares);
-            List<double[]> XiClShare = CreateRandomShares(N, numOfShares);
-            List<double[]> SqClShare = CreateRandomShares(N, numOfShares);
+            List<uint[]> clShare = CreateRandomShares(N, numOfShares);
+            List<uint[]> XiClShare = CreateRandomShares(N, numOfShares);
+            List<uint[]> SqClShare = CreateRandomShares(N, numOfShares);
 
             var lines12To21Watch = Stopwatch.StartNew();
 
@@ -323,11 +323,11 @@ namespace SecretSharing
                 {
                     double similarityScore = 0;
 
-                    double z1 = ScalarProductShares(clShare, cmShare);
+                    ulong z1 = ScalarProductShares(clShare, cmShare);
 
-                    double z2 = ScalarProductShares(SqClShare, XiCmShare);
+                    ulong z2 = ScalarProductShares(SqClShare, XiCmShare);
 
-                    double z3 = ScalarProductShares(XiClShare, SqCmShare);
+                    ulong z3 = ScalarProductShares(XiClShare, SqCmShare);
 
                     var mult = z2 * z3;
                     if (mult != 0)
@@ -365,7 +365,7 @@ namespace SecretSharing
                 smVectors.Add(smVector);
             }
 
-            List<double[]>[] sharesArray = new List<double[]>[100];
+            List<uint[]>[] sharesArray = new List<uint[]>[100];
 
             for (int i = 0; i < 100; i++)
             {
@@ -611,11 +611,11 @@ namespace SecretSharing
                 {
                     double similarityScore = 0;
 
-                    double z1 = ScalarProductShares(clSharesArray[i], clSharesArray[j]);
+                    ulong z1 = ScalarProductShares(clSharesArray[i], clSharesArray[j]);
 
-                    double z2 = ScalarProductShares(SqClSharesArray[i], XiClSharesArray[j]);
+                    ulong z2 = ScalarProductShares(SqClSharesArray[i], XiClSharesArray[j]);
 
-                    double z3 = ScalarProductShares(XiClSharesArray[i], SqClSharesArray[j]);
+                    ulong z3 = ScalarProductShares(XiClSharesArray[i], SqClSharesArray[j]);
 
                     var mult = z2 * z3;
                     if (mult != 0)
@@ -663,9 +663,9 @@ namespace SecretSharing
             int k = itemsVendorIndex.Last() + 1;
             int items = userItemMatrix.GetLength(1);
             double[,] similarityMatrix = new double[items, items];
-            List<double[]>[] clSharesArray = new List<double[]>[items];
-            List<double[]>[] clPowSharesArray = new List<double[]>[items];
-            List<double[]>[] xiClSharesArray = new List<double[]>[items];
+            List<uint[]>[] clSharesArray = new List<uint[]>[items];
+            List<uint[]>[] clPowSharesArray = new List<uint[]>[items];
+            List<uint[]>[] xiClSharesArray = new List<uint[]>[items];
 
             long totalVendorsDuration = 0;
             long totalMediatorsDuration = 0;
@@ -719,15 +719,15 @@ namespace SecretSharing
 
             for (int i = 0; i < items; i++)
             {
-                double[] cl = userItemMatrix.GetVerticalVector(i).Select(o => (double)o).ToArray();
+                sbyte[] cl = userItemMatrix.GetVerticalVector(i).ToArray();
                 var clShares = ShamirSecretSharing(cl, numOfShares);
                 clSharesArray[i] = clShares;
 
-                double[] clPow = Array.ConvertAll(cl, x => x * x);
+                var clPow = Array.ConvertAll(cl, x => x * x);
                 var clPowShares = ShamirSecretSharing(clPow, numOfShares);
                 clPowSharesArray[i] = clPowShares;
 
-                double[] xiCl = Array.ConvertAll(cl, x => x == 0 ? (double)0 : 1);
+                var xiCl = Array.ConvertAll(cl, x => x == 0 ? 0 : 1);
                 var xiClShares = ShamirSecretSharing(xiCl, numOfShares);
                 xiClSharesArray[i] = xiClShares;
 
@@ -825,7 +825,7 @@ namespace SecretSharing
                 {
                     for (int j = 0; j < M; j++)
                     {
-                        double a = random.Next(2, maxRangeForRandom);
+                        uint a = (uint)random.Next(2, maxRangeForRandom);
 
                         uint lastY = 0;
                         if (matrix[i, j] != -1)
@@ -833,7 +833,7 @@ namespace SecretSharing
 
                         for (int shareIndex = 0; shareIndex < 3; shareIndex++)
                         {
-                            uint y = lastY + (uint)a;
+                            uint y = lastY + a;
                             lastY = y;
 
                             shares[shareIndex][i, j] = y;
@@ -898,29 +898,29 @@ namespace SecretSharing
                 {
                     for (int j = 0; j < M; j++)
                     {
-                        double entry = 0;
+                        uint entry = 0;
                         if (matrix[i, j] != -1)
-                            entry = matrix[i, j];
+                            entry = (uint)matrix[i, j];
 
-                        double a = random.Next(2, maxRangeForRandom);
-                        double b = random.Next(2, maxRangeForRandom);
-                        double c = random.Next(2, maxRangeForRandom);
+                        uint a = (uint)random.Next(2, maxRangeForRandom);
+                        uint b = (uint)random.Next(2, maxRangeForRandom);
+                        uint c = (uint)random.Next(2, maxRangeForRandom);
 
-                        double B = a + b + c;
-                        double B1 = 6 * c;
-                        double B2 = 2 * b;
-                        double B3 = B + B2 + B1;
-                        double B5 = B3 + B2 + 2 * B1;
-                        double B7 = B5 + B2 + 3 * B1;
-                        double B9 = B7 + B2 + 4 * B1;
-                        double B11 = B9 + B2 + 5 * B1;
-                        double B13 = B11 + B2 + 6 * B1;
+                        uint B = a + b + c;
+                        uint B1 = 6 * c;
+                        uint B2 = 2 * b;
+                        uint B3 = B + B2 + B1;
+                        uint B5 = B3 + B2 + 2 * B1;
+                        uint B7 = B5 + B2 + 3 * B1;
+                        uint B9 = B7 + B2 + 4 * B1;
+                        uint B11 = B9 + B2 + 5 * B1;
+                        uint B13 = B11 + B2 + 6 * B1;
 
-                        double lastY = 0;
+                        uint lastY = 0;
 
                         for (int shareIndex = 0; shareIndex < 7; shareIndex++)
                         {
-                            double y = 0;
+                            uint y = 0;
                             switch (shareIndex)
                             {
                                 case 0:
@@ -947,7 +947,7 @@ namespace SecretSharing
                             }
                             lastY = y;
 
-                            shares[shareIndex][i, j] = (uint)y;
+                            shares[shareIndex][i, j] = y;
                         }
                     }
                 }
@@ -959,32 +959,32 @@ namespace SecretSharing
                 {
                     for (int j = 0; j < M; j++)
                     {
-                        double entry = 0;
+                        uint entry = 0;
                         if (matrix[i, j] != -1)
-                            entry = matrix[i, j];
-                        double a = random.Next(2, maxRangeForRandom);
-                        double b = random.Next(2, maxRangeForRandom);
-                        double c = random.Next(2, maxRangeForRandom);
-                        double d = random.Next(2, maxRangeForRandom);
+                            entry = (uint)matrix[i, j];
+                        uint a = (uint)random.Next(2, maxRangeForRandom);
+                        uint b = (uint)random.Next(2, maxRangeForRandom);
+                        uint c = (uint)random.Next(2, maxRangeForRandom);
+                        uint d = (uint)random.Next(2, maxRangeForRandom);
 
-                        double B = a + b + c + d;
-                        double B1 = 2 * d;
-                        double B2 = 6 * c;
-                        double B3 = 2 * b;
-                        double B5 = B + B3 + B2 + 7 * B1;
-                        double B7 = B5 + B3 + 2 * B2 + 25 * B1;
-                        double B9 = B7 + B3 + 3 * B2 + 55 * B1;
-                        double B11 = B9 + B3 + 4 * B2 + 97 * B1;
-                        double B13 = B11 + B3 + 5 * B2 + 151 * B1;
-                        double B15 = B13 + B3 + 6 * B2 + 217 * B1;
-                        double B17 = B15 + B3 + 7 * B2 + 295 * B1;
-                        double B19 = B17 + B3 + 8 * B2 + 385 * B1;
+                        uint B = a + b + c + d;
+                        uint B1 = 2 * d;
+                        uint B2 = 6 * c;
+                        uint B3 = 2 * b;
+                        uint B5 = B + B3 + B2 + 7 * B1;
+                        uint B7 = B5 + B3 + 2 * B2 + 25 * B1;
+                        uint B9 = B7 + B3 + 3 * B2 + 55 * B1;
+                        uint B11 = B9 + B3 + 4 * B2 + 97 * B1;
+                        uint B13 = B11 + B3 + 5 * B2 + 151 * B1;
+                        uint B15 = B13 + B3 + 6 * B2 + 217 * B1;
+                        uint B17 = B15 + B3 + 7 * B2 + 295 * B1;
+                        uint B19 = B17 + B3 + 8 * B2 + 385 * B1;
 
-                        double lastY = 0;
+                        uint lastY = 0;
 
                         for (int shareIndex = 0; shareIndex < 9; shareIndex++)
                         {
-                            double y = 0;
+                            uint y = 0;
                             switch (shareIndex)
                             {
                                 case 0:
@@ -1017,7 +1017,7 @@ namespace SecretSharing
                             }
                             lastY = y;
 
-                            shares[shareIndex][i, j] = (uint)y;
+                            shares[shareIndex][i, j] = y;
                         }
                     }
                 }
@@ -1038,7 +1038,7 @@ namespace SecretSharing
                 {
                     for (int j = 0; j < M; j++)
                     {
-                        double a = random.Next(2, maxRangeForRandom);
+                        uint a = (uint)random.Next(2, maxRangeForRandom);
 
                         uint lastY = 0;
                         if (matrix[i, j] != -1)
@@ -1046,7 +1046,7 @@ namespace SecretSharing
 
                         for (int shareIndex = 0; shareIndex < 3; shareIndex++)
                         {
-                            uint y = lastY + (uint)a;
+                            uint y = lastY + a;
                             lastY = y;
                         }
                     }
@@ -1107,29 +1107,29 @@ namespace SecretSharing
                 {
                     for (int j = 0; j < M; j++)
                     {
-                        double entry = 0;
+                        uint entry = 0;
                         if (matrix[i, j] != -1)
-                            entry = matrix[i, j];
+                            entry = (uint)matrix[i, j];
 
-                        double a = random.Next(2, maxRangeForRandom);
-                        double b = random.Next(2, maxRangeForRandom);
-                        double c = random.Next(2, maxRangeForRandom);
+                        uint a = (uint)random.Next(2, maxRangeForRandom);
+                        uint b = (uint)random.Next(2, maxRangeForRandom);
+                        uint c = (uint)random.Next(2, maxRangeForRandom);
 
-                        double B = a + b + c;
-                        double B1 = 6 * c;
-                        double B2 = 2 * b;
-                        double B3 = B + B2 + B1;
-                        double B5 = B3 + B2 + 2 * B1;
-                        double B7 = B5 + B2 + 3 * B1;
-                        double B9 = B7 + B2 + 4 * B1;
-                        double B11 = B9 + B2 + 5 * B1;
-                        double B13 = B11 + B2 + 6 * B1;
+                        uint B = a + b + c;
+                        uint B1 = 6 * c;
+                        uint B2 = 2 * b;
+                        uint B3 = B + B2 + B1;
+                        uint B5 = B3 + B2 + 2 * B1;
+                        uint B7 = B5 + B2 + 3 * B1;
+                        uint B9 = B7 + B2 + 4 * B1;
+                        uint B11 = B9 + B2 + 5 * B1;
+                        uint B13 = B11 + B2 + 6 * B1;
 
-                        double lastY = 0;
+                        uint lastY = 0;
 
                         for (int shareIndex = 0; shareIndex < 7; shareIndex++)
                         {
-                            double y = 0;
+                            uint y = 0;
                             switch (shareIndex)
                             {
                                 case 0:
@@ -1166,32 +1166,32 @@ namespace SecretSharing
                 {
                     for (int j = 0; j < M; j++)
                     {
-                        double entry = 0;
+                        uint entry = 0;
                         if (matrix[i, j] != -1)
-                            entry = matrix[i, j];
-                        double a = random.Next(2, maxRangeForRandom);
-                        double b = random.Next(2, maxRangeForRandom);
-                        double c = random.Next(2, maxRangeForRandom);
-                        double d = random.Next(2, maxRangeForRandom);
+                            entry = (uint)matrix[i, j];
+                        uint a = (uint)random.Next(2, maxRangeForRandom);
+                        uint b = (uint)random.Next(2, maxRangeForRandom);
+                        uint c = (uint)random.Next(2, maxRangeForRandom);
+                        uint d = (uint)random.Next(2, maxRangeForRandom);
 
-                        double B = a + b + c + d;
-                        double B1 = 2 * d;
-                        double B2 = 6 * c;
-                        double B3 = 2 * b;
-                        double B5 = B + B3 + B2 + 7 * B1;
-                        double B7 = B5 + B3 + 2 * B2 + 25 * B1;
-                        double B9 = B7 + B3 + 3 * B2 + 55 * B1;
-                        double B11 = B9 + B3 + 4 * B2 + 97 * B1;
-                        double B13 = B11 + B3 + 5 * B2 + 151 * B1;
-                        double B15 = B13 + B3 + 6 * B2 + 217 * B1;
-                        double B17 = B15 + B3 + 7 * B2 + 295 * B1;
-                        double B19 = B17 + B3 + 8 * B2 + 385 * B1;
+                        uint B = a + b + c + d;
+                        uint B1 = 2 * d;
+                        uint B2 = 6 * c;
+                        uint B3 = 2 * b;
+                        uint B5 = B + B3 + B2 + 7 * B1;
+                        uint B7 = B5 + B3 + 2 * B2 + 25 * B1;
+                        uint B9 = B7 + B3 + 3 * B2 + 55 * B1;
+                        uint B11 = B9 + B3 + 4 * B2 + 97 * B1;
+                        uint B13 = B11 + B3 + 5 * B2 + 151 * B1;
+                        uint B15 = B13 + B3 + 6 * B2 + 217 * B1;
+                        uint B17 = B15 + B3 + 7 * B2 + 295 * B1;
+                        uint B19 = B17 + B3 + 8 * B2 + 385 * B1;
 
-                        double lastY = 0;
+                        uint lastY = 0;
 
                         for (int shareIndex = 0; shareIndex < 9; shareIndex++)
                         {
-                            double y = 0;
+                            uint y = 0;
                             switch (shareIndex)
                             {
                                 case 0:
@@ -1237,13 +1237,13 @@ namespace SecretSharing
         /// <param name="numOfSharesToMake"></param>
         /// <param name="numOfSharesForRecovery"></param>
         /// <returns>Shares array for each of the mediators</returns>
-        public static List<double[]> ShamirSecretSharing(double[] vector, int numOfShares)
+        public static List<uint[]> ShamirSecretSharing(sbyte[] vector, int numOfShares)
         {
             int maxRangeForRandom = 65536;
-            var shares = new List<double[]>();
+            var shares = new List<uint[]>();
             for (int i = 0; i < numOfShares; i++)
             {
-                shares.Add(new double[vector.Length]);
+                shares.Add(new uint[vector.Length]);
             }
 
             if (numOfShares == 3)
@@ -1251,8 +1251,8 @@ namespace SecretSharing
                 int shareCount = 0;
                 foreach (int entry in vector)
                 {
-                    double a = random.Next(2, maxRangeForRandom);
-                    double lastY = entry;
+                    uint a = (uint)random.Next(2, maxRangeForRandom);
+                    uint lastY = (uint)entry;
 
                     for (int i = 0; i < 3; i++)
                     {
@@ -1268,22 +1268,22 @@ namespace SecretSharing
             else if (numOfShares == 5)
             {
                 int shareCount = 0;
-                foreach (double entry in vector)
+                foreach (uint entry in vector)
                 {
-                    double a = random.Next(2, maxRangeForRandom);
-                    double b = random.Next(2, maxRangeForRandom);
+                    uint a = (uint)random.Next(2, maxRangeForRandom);
+                    uint b = (uint)random.Next(2, maxRangeForRandom);
 
-                    double B = a + b;
-                    double B2 = b + b;
-                    double B3 = B + B2;
-                    double B5 = B3 + B2;
-                    double B7 = B5 + B2;
-                    double B9 = B7 + B2;
-                    double lastY = 0;
+                    uint B = a + b;
+                    uint B2 = b + b;
+                    uint B3 = B + B2;
+                    uint B5 = B3 + B2;
+                    uint B7 = B5 + B2;
+                    uint B9 = B7 + B2;
+                    uint lastY = 0;
 
                     for (int i = 0; i < 5; i++)
                     {
-                        double y = 0;
+                        uint y = 0;
                         switch (i)
                         {
                             case 0:
@@ -1313,27 +1313,27 @@ namespace SecretSharing
             else if (numOfShares == 7)
             {
                 int shareCount = 0;
-                foreach (double entry in vector)
+                foreach (uint entry in vector)
                 {
-                    double a = random.Next(2, maxRangeForRandom);
-                    double b = random.Next(2, maxRangeForRandom);
-                    double c = random.Next(2, maxRangeForRandom);
+                    uint a = (uint)random.Next(2, maxRangeForRandom);
+                    uint b = (uint)random.Next(2, maxRangeForRandom);
+                    uint c = (uint)random.Next(2, maxRangeForRandom);
 
-                    double B = a + b + c;
-                    double B1 = 6 * c;
-                    double B2 = 2 * b;
-                    double B3 = B + B2 + B1;
-                    double B5 = B3 + B2 + 2 * B1;
-                    double B7 = B5 + B2 + 3 * B1;
-                    double B9 = B7 + B2 + 4 * B1;
-                    double B11 = B9 + B2 + 5 * B1;
-                    double B13 = B11 + B2 + 6 * B1;
+                    uint B = a + b + c;
+                    uint B1 = 6 * c;
+                    uint B2 = 2 * b;
+                    uint B3 = B + B2 + B1;
+                    uint B5 = B3 + B2 + 2 * B1;
+                    uint B7 = B5 + B2 + 3 * B1;
+                    uint B9 = B7 + B2 + 4 * B1;
+                    uint B11 = B9 + B2 + 5 * B1;
+                    uint B13 = B11 + B2 + 6 * B1;
 
-                    double lastY = 0;
+                    uint lastY = 0;
 
                     for (int i = 0; i < 7; i++)
                     {
-                        double y = 0;
+                        uint y = 0;
                         switch (i)
                         {
                             case 0:
@@ -1369,31 +1369,31 @@ namespace SecretSharing
             else if (numOfShares == 9)
             {
                 int shareCount = 0;
-                foreach (double entry in vector)
+                foreach (uint entry in vector)
                 {
-                    double a = random.Next(2, maxRangeForRandom);
-                    double b = random.Next(2, maxRangeForRandom);
-                    double c = random.Next(2, maxRangeForRandom);
-                    double d = random.Next(2, maxRangeForRandom);
+                    uint a = (uint)random.Next(2, maxRangeForRandom);
+                    uint b = (uint)random.Next(2, maxRangeForRandom);
+                    uint c = (uint)random.Next(2, maxRangeForRandom);
+                    uint d = (uint)random.Next(2, maxRangeForRandom);
 
-                    double B = a + b + c + d;
-                    double B1 = 2 * d;
-                    double B2 = 6 * c;
-                    double B3 = 2 * b;
-                    double B5 = B + B3 + B2 + 7 * B1;
-                    double B7 = B5 + B3 + 2 * B2 + 25 * B1;
-                    double B9 = B7 + B3 + 3 * B2 + 55 * B1;
-                    double B11 = B9 + B3 + 4 * B2 + 97 * B1;
-                    double B13 = B11 + B3 + 5 * B2 + 151 * B1;
-                    double B15 = B13 + B3 + 6 * B2 + 217 * B1;
-                    double B17 = B15 + B3 + 7 * B2 + 295 * B1;
-                    double B19 = B17 + B3 + 8 * B2 + 385 * B1;
+                    uint B = a + b + c + d;
+                    uint B1 = 2 * d;
+                    uint B2 = 6 * c;
+                    uint B3 = 2 * b;
+                    uint B5 = B + B3 + B2 + 7 * B1;
+                    uint B7 = B5 + B3 + 2 * B2 + 25 * B1;
+                    uint B9 = B7 + B3 + 3 * B2 + 55 * B1;
+                    uint B11 = B9 + B3 + 4 * B2 + 97 * B1;
+                    uint B13 = B11 + B3 + 5 * B2 + 151 * B1;
+                    uint B15 = B13 + B3 + 6 * B2 + 217 * B1;
+                    uint B17 = B15 + B3 + 7 * B2 + 295 * B1;
+                    uint B19 = B17 + B3 + 8 * B2 + 385 * B1;
 
-                    double lastY = 0;
+                    uint lastY = 0;
 
                     for (int i = 0; i < 9; i++)
                     {
-                        double y = 0;
+                        uint y = 0;
                         switch (i)
                         {
                             case 0:
@@ -1435,13 +1435,13 @@ namespace SecretSharing
             return shares;
         }
 
-        public static List<double[]> ShamirSecretSharing(uint[] vector, int numOfShares)
+        public static List<uint[]> ShamirSecretSharing(uint[] vector, int numOfShares)
         {
             int maxRangeForRandom = 65536;
-            var shares = new List<double[]>();
+            var shares = new List<uint[]>();
             for (int i = 0; i < numOfShares; i++)
             {
-                shares.Add(new double[vector.Length]);
+                shares.Add(new uint[vector.Length]);
             }
 
             if (numOfShares == 3)
@@ -1449,8 +1449,8 @@ namespace SecretSharing
                 int shareCount = 0;
                 foreach (int entry in vector)
                 {
-                    double a = random.Next(2, maxRangeForRandom);
-                    double lastY = entry;
+                    uint a = (uint)random.Next(2, maxRangeForRandom);
+                    uint lastY = (uint)entry;
 
                     for (int i = 0; i < 3; i++)
                     {
@@ -1466,22 +1466,22 @@ namespace SecretSharing
             else if (numOfShares == 5)
             {
                 int shareCount = 0;
-                foreach (double entry in vector)
+                foreach (uint entry in vector)
                 {
-                    double a = random.Next(2, maxRangeForRandom);
-                    double b = random.Next(2, maxRangeForRandom);
+                    uint a = (uint)random.Next(2, maxRangeForRandom);
+                    uint b = (uint)random.Next(2, maxRangeForRandom);
 
-                    double B = a + b;
-                    double B2 = b + b;
-                    double B3 = B + B2;
-                    double B5 = B3 + B2;
-                    double B7 = B5 + B2;
-                    double B9 = B7 + B2;
-                    double lastY = 0;
+                    uint B = a + b;
+                    uint B2 = b + b;
+                    uint B3 = B + B2;
+                    uint B5 = B3 + B2;
+                    uint B7 = B5 + B2;
+                    uint B9 = B7 + B2;
+                    uint lastY = 0;
 
                     for (int i = 0; i < 5; i++)
                     {
-                        double y = 0;
+                        uint y = 0;
                         switch (i)
                         {
                             case 0:
@@ -1511,27 +1511,27 @@ namespace SecretSharing
             else if (numOfShares == 7)
             {
                 int shareCount = 0;
-                foreach (double entry in vector)
+                foreach (uint entry in vector)
                 {
-                    double a = random.Next(2, maxRangeForRandom);
-                    double b = random.Next(2, maxRangeForRandom);
-                    double c = random.Next(2, maxRangeForRandom);
+                    uint a = (uint)random.Next(2, maxRangeForRandom);
+                    uint b = (uint)random.Next(2, maxRangeForRandom);
+                    uint c = (uint)random.Next(2, maxRangeForRandom);
 
-                    double B = a + b + c;
-                    double B1 = 6 * c;
-                    double B2 = 2 * b;
-                    double B3 = B + B2 + B1;
-                    double B5 = B3 + B2 + 2 * B1;
-                    double B7 = B5 + B2 + 3 * B1;
-                    double B9 = B7 + B2 + 4 * B1;
-                    double B11 = B9 + B2 + 5 * B1;
-                    double B13 = B11 + B2 + 6 * B1;
+                    uint B = a + b + c;
+                    uint B1 = 6 * c;
+                    uint B2 = 2 * b;
+                    uint B3 = B + B2 + B1;
+                    uint B5 = B3 + B2 + 2 * B1;
+                    uint B7 = B5 + B2 + 3 * B1;
+                    uint B9 = B7 + B2 + 4 * B1;
+                    uint B11 = B9 + B2 + 5 * B1;
+                    uint B13 = B11 + B2 + 6 * B1;
 
-                    double lastY = 0;
+                    uint lastY = 0;
 
                     for (int i = 0; i < 7; i++)
                     {
-                        double y = 0;
+                        uint y = 0;
                         switch (i)
                         {
                             case 0:
@@ -1567,31 +1567,229 @@ namespace SecretSharing
             else if (numOfShares == 9)
             {
                 int shareCount = 0;
-                foreach (double entry in vector)
+                foreach (uint entry in vector)
                 {
-                    double a = random.Next(2, maxRangeForRandom);
-                    double b = random.Next(2, maxRangeForRandom);
-                    double c = random.Next(2, maxRangeForRandom);
-                    double d = random.Next(2, maxRangeForRandom);
+                    uint a = (uint)random.Next(2, maxRangeForRandom);
+                    uint b = (uint)random.Next(2, maxRangeForRandom);
+                    uint c = (uint)random.Next(2, maxRangeForRandom);
+                    uint d = (uint)random.Next(2, maxRangeForRandom);
 
-                    double B = a + b + c + d;
-                    double B1 = 2 * d;
-                    double B2 = 6 * c;
-                    double B3 = 2 * b;
-                    double B5 = B + B3 + B2 + 7 * B1;
-                    double B7 = B5 + B3 + 2 * B2 + 25 * B1;
-                    double B9 = B7 + B3 + 3 * B2 + 55 * B1;
-                    double B11 = B9 + B3 + 4 * B2 + 97 * B1;
-                    double B13 = B11 + B3 + 5 * B2 + 151 * B1;
-                    double B15 = B13 + B3 + 6 * B2 + 217 * B1;
-                    double B17 = B15 + B3 + 7 * B2 + 295 * B1;
-                    double B19 = B17 + B3 + 8 * B2 + 385 * B1;
+                    uint B = a + b + c + d;
+                    uint B1 = 2 * d;
+                    uint B2 = 6 * c;
+                    uint B3 = 2 * b;
+                    uint B5 = B + B3 + B2 + 7 * B1;
+                    uint B7 = B5 + B3 + 2 * B2 + 25 * B1;
+                    uint B9 = B7 + B3 + 3 * B2 + 55 * B1;
+                    uint B11 = B9 + B3 + 4 * B2 + 97 * B1;
+                    uint B13 = B11 + B3 + 5 * B2 + 151 * B1;
+                    uint B15 = B13 + B3 + 6 * B2 + 217 * B1;
+                    uint B17 = B15 + B3 + 7 * B2 + 295 * B1;
+                    uint B19 = B17 + B3 + 8 * B2 + 385 * B1;
 
-                    double lastY = 0;
+                    uint lastY = 0;
 
                     for (int i = 0; i < 9; i++)
                     {
-                        double y = 0;
+                        uint y = 0;
+                        switch (i)
+                        {
+                            case 0:
+                                y = entry + B;
+                                break;
+                            case 1:
+                                y = lastY + B5;
+                                break;
+                            case 2:
+                                y = lastY + B7;
+                                break;
+                            case 3:
+                                y = lastY + B9;
+                                break;
+                            case 4:
+                                y = lastY + B11;
+                                break;
+                            case 5:
+                                y = lastY + B13;
+                                break;
+                            case 6:
+                                y = lastY + B15;
+                                break;
+                            case 7:
+                                y = lastY + B17;
+                                break;
+                            case 8:
+                                y = lastY + B19;
+                                break;
+                        }
+                        lastY = y;
+
+                        shares[i][shareCount] = y;
+                    }
+                    shareCount++;
+                }
+            }
+
+            return shares;
+        }
+
+        public static List<uint[]> ShamirSecretSharing(int[] vector, int numOfShares)
+        {
+            int maxRangeForRandom = 65536;
+            var shares = new List<uint[]>();
+            for (int i = 0; i < numOfShares; i++)
+            {
+                shares.Add(new uint[vector.Length]);
+            }
+
+            if (numOfShares == 3)
+            {
+                int shareCount = 0;
+                foreach (int entry in vector)
+                {
+                    uint a = (uint)random.Next(2, maxRangeForRandom);
+                    uint lastY = (uint)entry;
+
+                    for (int i = 0; i < 3; i++)
+                    {
+                        var y = lastY + a;
+                        lastY = y;
+
+                        shares[i][shareCount] = y;
+                    }
+                    shareCount++;
+                }
+            }
+
+            else if (numOfShares == 5)
+            {
+                int shareCount = 0;
+                foreach (uint entry in vector)
+                {
+                    uint a = (uint)random.Next(2, maxRangeForRandom);
+                    uint b = (uint)random.Next(2, maxRangeForRandom);
+
+                    uint B = a + b;
+                    uint B2 = b + b;
+                    uint B3 = B + B2;
+                    uint B5 = B3 + B2;
+                    uint B7 = B5 + B2;
+                    uint B9 = B7 + B2;
+                    uint lastY = 0;
+
+                    for (int i = 0; i < 5; i++)
+                    {
+                        uint y = 0;
+                        switch (i)
+                        {
+                            case 0:
+                                y = entry + B;
+                                break;
+                            case 1:
+                                y = lastY + B3;
+                                break;
+                            case 2:
+                                y = lastY + B5;
+                                break;
+                            case 3:
+                                y = lastY + B7;
+                                break;
+                            case 4:
+                                y = lastY + B9;
+                                break;
+                        }
+                        lastY = y;
+
+                        shares[i][shareCount] = y;
+                    }
+                    shareCount++;
+                }
+            }
+
+            else if (numOfShares == 7)
+            {
+                int shareCount = 0;
+                foreach (uint entry in vector)
+                {
+                    uint a = (uint)random.Next(2, maxRangeForRandom);
+                    uint b = (uint)random.Next(2, maxRangeForRandom);
+                    uint c = (uint)random.Next(2, maxRangeForRandom);
+
+                    uint B = a + b + c;
+                    uint B1 = 6 * c;
+                    uint B2 = 2 * b;
+                    uint B3 = B + B2 + B1;
+                    uint B5 = B3 + B2 + 2 * B1;
+                    uint B7 = B5 + B2 + 3 * B1;
+                    uint B9 = B7 + B2 + 4 * B1;
+                    uint B11 = B9 + B2 + 5 * B1;
+                    uint B13 = B11 + B2 + 6 * B1;
+
+                    uint lastY = 0;
+
+                    for (int i = 0; i < 7; i++)
+                    {
+                        uint y = 0;
+                        switch (i)
+                        {
+                            case 0:
+                                y = entry + B;
+                                break;
+                            case 1:
+                                y = lastY + B3;
+                                break;
+                            case 2:
+                                y = lastY + B5;
+                                break;
+                            case 3:
+                                y = lastY + B7;
+                                break;
+                            case 4:
+                                y = lastY + B9;
+                                break;
+                            case 5:
+                                y = lastY + B11;
+                                break;
+                            case 6:
+                                y = lastY + B13;
+                                break;
+                        }
+                        lastY = y;
+
+                        shares[i][shareCount] = y;
+                    }
+                    shareCount++;
+                }
+            }
+
+            else if (numOfShares == 9)
+            {
+                int shareCount = 0;
+                foreach (uint entry in vector)
+                {
+                    uint a = (uint)random.Next(2, maxRangeForRandom);
+                    uint b = (uint)random.Next(2, maxRangeForRandom);
+                    uint c = (uint)random.Next(2, maxRangeForRandom);
+                    uint d = (uint)random.Next(2, maxRangeForRandom);
+
+                    uint B = a + b + c + d;
+                    uint B1 = 2 * d;
+                    uint B2 = 6 * c;
+                    uint B3 = 2 * b;
+                    uint B5 = B + B3 + B2 + 7 * B1;
+                    uint B7 = B5 + B3 + 2 * B2 + 25 * B1;
+                    uint B9 = B7 + B3 + 3 * B2 + 55 * B1;
+                    uint B11 = B9 + B3 + 4 * B2 + 97 * B1;
+                    uint B13 = B11 + B3 + 5 * B2 + 151 * B1;
+                    uint B15 = B13 + B3 + 6 * B2 + 217 * B1;
+                    uint B17 = B15 + B3 + 7 * B2 + 295 * B1;
+                    uint B19 = B17 + B3 + 8 * B2 + 385 * B1;
+
+                    uint lastY = 0;
+
+                    for (int i = 0; i < 9; i++)
+                    {
+                        uint y = 0;
                         switch (i)
                         {
                             case 0:
@@ -1642,8 +1840,8 @@ namespace SecretSharing
                 int shareCount = 0;
                 foreach (int entry in vector)
                 {
-                    double a = random.Next(2, maxRangeForRandom);
-                    double lastY = entry;
+                    uint a = (uint)random.Next(2, maxRangeForRandom);
+                    uint lastY = (uint)entry;
 
                     for (int i = 0; i < 3; i++)
                     {
@@ -1657,22 +1855,22 @@ namespace SecretSharing
             else if (numOfShares == 5)
             {
                 int shareCount = 0;
-                foreach (double entry in vector)
+                foreach (uint entry in vector)
                 {
-                    double a = random.Next(2, maxRangeForRandom);
-                    double b = random.Next(2, maxRangeForRandom);
+                    uint a = (uint)random.Next(2, maxRangeForRandom);
+                    uint b = (uint)random.Next(2, maxRangeForRandom);
 
-                    double B = a + b;
-                    double B2 = b + b;
-                    double B3 = B + B2;
-                    double B5 = B3 + B2;
-                    double B7 = B5 + B2;
-                    double B9 = B7 + B2;
-                    double lastY = 0;
+                    uint B = a + b;
+                    uint B2 = b + b;
+                    uint B3 = B + B2;
+                    uint B5 = B3 + B2;
+                    uint B7 = B5 + B2;
+                    uint B9 = B7 + B2;
+                    uint lastY = 0;
 
                     for (int i = 0; i < 5; i++)
                     {
-                        double y = 0;
+                        uint y = 0;
                         switch (i)
                         {
                             case 0:
@@ -1700,27 +1898,27 @@ namespace SecretSharing
             else if (numOfShares == 7)
             {
                 int shareCount = 0;
-                foreach (double entry in vector)
+                foreach (uint entry in vector)
                 {
-                    double a = random.Next(2, maxRangeForRandom);
-                    double b = random.Next(2, maxRangeForRandom);
-                    double c = random.Next(2, maxRangeForRandom);
+                    uint a = (uint)random.Next(2, maxRangeForRandom);
+                    uint b = (uint)random.Next(2, maxRangeForRandom);
+                    uint c = (uint)random.Next(2, maxRangeForRandom);
 
-                    double B = a + b + c;
-                    double B1 = 6 * c;
-                    double B2 = 2 * b;
-                    double B3 = B + B2 + B1;
-                    double B5 = B3 + B2 + 2 * B1;
-                    double B7 = B5 + B2 + 3 * B1;
-                    double B9 = B7 + B2 + 4 * B1;
-                    double B11 = B9 + B2 + 5 * B1;
-                    double B13 = B11 + B2 + 6 * B1;
+                    uint B = a + b + c;
+                    uint B1 = 6 * c;
+                    uint B2 = 2 * b;
+                    uint B3 = B + B2 + B1;
+                    uint B5 = B3 + B2 + 2 * B1;
+                    uint B7 = B5 + B2 + 3 * B1;
+                    uint B9 = B7 + B2 + 4 * B1;
+                    uint B11 = B9 + B2 + 5 * B1;
+                    uint B13 = B11 + B2 + 6 * B1;
 
-                    double lastY = 0;
+                    uint lastY = 0;
 
                     for (int i = 0; i < 7; i++)
                     {
-                        double y = 0;
+                        uint y = 0;
                         switch (i)
                         {
                             case 0:
@@ -1754,31 +1952,31 @@ namespace SecretSharing
             else if (numOfShares == 9)
             {
                 int shareCount = 0;
-                foreach (double entry in vector)
+                foreach (uint entry in vector)
                 {
-                    double a = random.Next(2, maxRangeForRandom);
-                    double b = random.Next(2, maxRangeForRandom);
-                    double c = random.Next(2, maxRangeForRandom);
-                    double d = random.Next(2, maxRangeForRandom);
+                    uint a = (uint)random.Next(2, maxRangeForRandom);
+                    uint b = (uint)random.Next(2, maxRangeForRandom);
+                    uint c = (uint)random.Next(2, maxRangeForRandom);
+                    uint d = (uint)random.Next(2, maxRangeForRandom);
 
-                    double B = a + b + c + d;
-                    double B1 = 2 * d;
-                    double B2 = 6 * c;
-                    double B3 = 2 * b;
-                    double B5 = B + B3 + B2 + 7 * B1;
-                    double B7 = B5 + B3 + 2 * B2 + 25 * B1;
-                    double B9 = B7 + B3 + 3 * B2 + 55 * B1;
-                    double B11 = B9 + B3 + 4 * B2 + 97 * B1;
-                    double B13 = B11 + B3 + 5 * B2 + 151 * B1;
-                    double B15 = B13 + B3 + 6 * B2 + 217 * B1;
-                    double B17 = B15 + B3 + 7 * B2 + 295 * B1;
-                    double B19 = B17 + B3 + 8 * B2 + 385 * B1;
+                    uint B = a + b + c + d;
+                    uint B1 = 2 * d;
+                    uint B2 = 6 * c;
+                    uint B3 = 2 * b;
+                    uint B5 = B + B3 + B2 + 7 * B1;
+                    uint B7 = B5 + B3 + 2 * B2 + 25 * B1;
+                    uint B9 = B7 + B3 + 3 * B2 + 55 * B1;
+                    uint B11 = B9 + B3 + 4 * B2 + 97 * B1;
+                    uint B13 = B11 + B3 + 5 * B2 + 151 * B1;
+                    uint B15 = B13 + B3 + 6 * B2 + 217 * B1;
+                    uint B17 = B15 + B3 + 7 * B2 + 295 * B1;
+                    uint B19 = B17 + B3 + 8 * B2 + 385 * B1;
 
-                    double lastY = 0;
+                    uint lastY = 0;
 
                     for (int i = 0; i < 9; i++)
                     {
-                        double y = 0;
+                        uint y = 0;
                         switch (i)
                         {
                             case 0:
@@ -1822,7 +2020,8 @@ namespace SecretSharing
         /// <param name="clShares"></param>
         /// <param name="cmShares"></param>
         /// <returns></returns>
-        public static double ScalarProductShares(List<double[]> clShares, List<double[]> cmShares)
+
+        public static ulong ScalarProductShares(List<uint[]> clShares, List<uint[]> cmShares)
         {
             ulong[] coordinates = new ulong[clShares.Count];
 
@@ -1830,26 +2029,7 @@ namespace SecretSharing
             {
                 for (int shareCount = 0; shareCount < clShares[0].Length; shareCount++)
                 {
-                    var newY = (ulong)clShares[indexCount][shareCount] * (ulong)cmShares[indexCount][shareCount];
-
-                    coordinates[indexCount] += newY;
-                }
-            }
-
-            var secret = ReconstructShamirSecret(coordinates.ToList());
-
-            return secret;
-        }
-
-        public static double ScalarProductShares(List<uint[]> clShares, List<uint[]> cmShares)
-        {
-            ulong[] coordinates = new ulong[clShares.Count];
-
-            for (int indexCount = 0; indexCount < clShares.Count; indexCount++)
-            {
-                for (int shareCount = 0; shareCount < clShares[0].Length; shareCount++)
-                {
-                    var newY = (ulong)clShares[indexCount][shareCount] * (ulong)cmShares[indexCount][shareCount];
+                    var newY = clShares[indexCount][shareCount] * (ulong)cmShares[indexCount][shareCount];
 
                     coordinates[indexCount] += newY;
                 }
@@ -2026,7 +2206,7 @@ namespace SecretSharing
                 return 0;
             }
 
-            return x / y;
+            return (double)x / y;
         }
 
         public static double ComputeAverageRating(List<double[,]> RShares, List<double[,]> XiRShares, int m)
@@ -2146,9 +2326,9 @@ namespace SecretSharing
             return sum % PRIME;
         }
 
-        public static double ReconstructShamirSecret(List<ulong> coordinates)
+        public static ulong ReconstructShamirSecret(List<ulong> coordinates)
         {
-            double secret = 0;
+            ulong secret = 0;
             if (coordinates.Count == 3)
             {
                 secret = ((3 * (coordinates[0] - coordinates[1]) + coordinates[2]) % PRIME);

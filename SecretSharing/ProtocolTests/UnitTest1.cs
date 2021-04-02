@@ -250,7 +250,7 @@ namespace ProtocolTests
         public void TestShamirReconstruction()
         {
             // ARRANGE
-            double[] vector = new double[1] { 9 };
+            uint[] vector = new uint[1] { 9 };
             var shares = Protocols.ShamirSecretSharing(vector, 5);
             List<ulong> coordinates = new List<ulong>();
             foreach (var share in shares)
@@ -278,8 +278,8 @@ namespace ProtocolTests
         public void TestScalarProductBetweenShares()
         {
             // ARRANGE
-            double[] firstVector = new double[3] { 9, 1, 2 };
-            double[] secondVector = new double[3] { 3, 2, 4 };
+            uint[] firstVector = new uint[3] { 9, 1, 2 };
+            uint[] secondVector = new uint[3] { 3, 2, 4 };
             var firstShares = Protocols.ShamirSecretSharing(firstVector, 5);
             var secondShares = Protocols.ShamirSecretSharing(secondVector, 5);
 
@@ -287,7 +287,7 @@ namespace ProtocolTests
             var res = Protocols.ScalarProductShares(firstShares, secondShares);
 
             // ASSERT
-            Assert.Equal(37, res);
+            Assert.Equal(37, (double)res);
         }
 
         [Fact]

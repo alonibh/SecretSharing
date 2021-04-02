@@ -299,6 +299,19 @@ namespace SecretSharing
             return sqVector;
         }
 
+        public static ulong Sum(this uint[] vector)
+        {
+            ulong sum = 0;
+            int length = vector.Length;
+
+            for (int i = 0; i < length; i++)
+            {
+                sum += vector[i];
+            }
+
+            return sum;
+        }
+
         public static sbyte[] GetXi(this sbyte[] vector)
         {
             int length = vector.Length;
