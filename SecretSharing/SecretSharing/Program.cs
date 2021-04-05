@@ -58,9 +58,9 @@ namespace SecretSharing
 
             Protocols.SimulateSingleVendorWorkInComputingSimilarityMatrix(userItemMatrix, D, fileName);
 
-            var someRShare = Protocols.CreateRandomMatrixShare(N, M);
-            var someXiRShare = Protocols.CreateRandomMatrixShare(N, M);
-            var someSqRShare = Protocols.CreateRandomMatrixShare(N, M);
+            var someRShare = Protocols.CreateRandomMatrixShare(N / D, M);
+            var someXiRShare = Protocols.CreateRandomMatrixShare(N / D, M);
+            var someSqRShare = Protocols.CreateRandomMatrixShare(N / D, M);
 
             Protocols.SimulateSingleMediatorWorkInComputingSimilarityMatrix(someRShare, someXiRShare, someSqRShare, D, fileName);
 
