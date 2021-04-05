@@ -312,6 +312,19 @@ namespace SecretSharing
             return sum;
         }
 
+        public static ulong Sum(this ushort[] vector)
+        {
+            ulong sum = 0;
+            int length = vector.Length;
+
+            for (int i = 0; i < length; i++)
+            {
+                sum += vector[i];
+            }
+
+            return sum;
+        }
+
         public static sbyte[] GetXi(this sbyte[] vector)
         {
             int length = vector.Length;
@@ -642,14 +655,12 @@ namespace SecretSharing
                     matrix[i, j] += share[i, j];
                 }
             }
-
         }
 
-        public static void AddShare(this double[,] matrix, double[,] share)
+        public static void AddShare(this uint[,] matrix, ushort[,] share)
         {
             int N = matrix.GetLength(0);
             int M = matrix.GetLength(1);
-            double[,] sumMatrix = new double[N, M];
 
             for (int i = 0; i < N; i++)
             {

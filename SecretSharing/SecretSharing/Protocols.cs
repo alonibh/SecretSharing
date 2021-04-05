@@ -17,6 +17,93 @@ namespace SecretSharing
 
         public static readonly Random random = new Random();
 
+        public static void MakeDistinct(string path)
+        {
+            List<UserRating> ratings = new List<UserRating>();
+
+            if (path.EndsWith("csv"))
+            {
+                var csvTable = new DataTable();
+                using (var csvReader = new CsvReader(new StreamReader(File.OpenRead(path)), true))
+                {
+                    csvTable.Load(csvReader);
+                }
+                for (int i = 0; i < csvTable.Rows.Count; i++)
+                {
+                    ratings.Add(new UserRating
+                    {
+                        UserId = int.Parse(csvTable.Rows[i][0].ToString()),
+                        ItemId = int.Parse(csvTable.Rows[i][1].ToString()),
+                        Rating = (sbyte)(double.Parse(csvTable.Rows[i][2].ToString()) * 2)
+                    });
+                }
+                string[] lines = new string[ratings.Count];
+                for (int i = 0; i < csvTable.Rows.Count; i++)
+                {
+                    lines[i] = $"{ratings[i].UserId} {ratings[i].ItemId} {ratings[i].Rating}";
+                }
+                File.AppendAllLines(@"ratings.dat", lines);
+            }
+
+            if (path.EndsWith("dat"))
+            {
+                string[] linesToRead = File.ReadAllLines(path);
+                foreach (var line in linesToRead)
+                {
+                    string[] splitted = line.Split();
+                    ratings.Add(new UserRating
+                    {
+                        UserId = int.Parse(splitted[0]),
+                        ItemId = int.Parse(splitted[1]),
+                        Rating = sbyte.Parse(splitted[2])
+                    });
+                }
+                int N = ratings.Max(o => o.UserId);
+                int M = ratings.Max(o => o.ItemId);
+
+                List<UserRating>[] ratingsArray = new List<UserRating>[M];
+                foreach (var rating in ratings)
+                {
+                    if (ratingsArray[rating.ItemId - 1] != null)
+                        ratingsArray[rating.ItemId - 1].Add(rating);
+                    else
+                    {
+                        ratingsArray[rating.ItemId - 1] = new List<UserRating>() { rating };
+                    }
+                }
+
+                for (int i = M - 1; i > 0; i--)
+                {
+                    if (ratingsArray[i] != null)
+                    {
+                        var firstEmeptyIndex = ratingsArray.TakeWhile(o => o != null).Count();
+                        if (firstEmeptyIndex > i)
+                        {
+                            ratingsArray = ratingsArray.TakeWhile(o => o != null).ToArray();
+                            break;
+                        }
+
+                        ratingsArray[firstEmeptyIndex] = new List<UserRating>();
+                        foreach (var rating in ratingsArray[i])
+                        {
+                            ratingsArray[firstEmeptyIndex].Add(new UserRating { UserId = rating.UserId, ItemId = firstEmeptyIndex + 1, Rating = rating.Rating });
+                        }
+                        ratingsArray[i] = null;
+                    }
+                }
+
+                var linesToWrite = new List<string>();
+                for (int i = 0; i < ratingsArray.Length; i++)
+                {
+                    foreach (var rating in ratingsArray[i])
+                    {
+                        linesToWrite.Add($"{rating.UserId} {rating.ItemId} {rating.Rating}");
+                    }
+                }
+                File.AppendAllLines("ratings-distict.dat", linesToWrite);
+            }
+        }
+
         public static sbyte[,] ReadUserItemMatrix(string path)
         {
             List<UserRating> ratings = new List<UserRating>();
@@ -111,31 +198,31 @@ namespace SecretSharing
             return R_ks;
         }
 
-        public static uint[,] CreateRandomMatrixShare(int n, int m)
+        public static ushort[,] CreateRandomMatrixShare(int n, int m)
         {
-            uint[,] matrix = new uint[n, m];
-            int maxRangeForRandom = 65536;
+            ushort[,] matrix = new ushort[n, m];
+            int maxRangeForRandom = 65535;
 
             for (int i = 0; i < n; i++)
             {
                 for (int j = 0; j < m; j++)
                 {
-                    matrix[i, j] = (uint)random.Next(2, maxRangeForRandom);
+                    matrix[i, j] = (ushort)random.Next(2, maxRangeForRandom);
                 }
             }
             return matrix;
         }
 
-        public static List<uint[]> CreateRandomShares(int n, int numOfShares)
+        public static List<ushort[]> CreateRandomShares(int n, int numOfShares)
         {
-            List<uint[]> shares = new List<uint[]>();
-            int maxRangeForRandom = 65536;
+            List<ushort[]> shares = new List<ushort[]>();
+            int maxRangeForRandom = 65535;
             for (int i = 0; i < numOfShares; i++)
             {
-                uint[] vector = new uint[n];
+                ushort[] vector = new ushort[n];
                 for (int j = 0; j < n; j++)
                 {
-                    vector[j] = (uint)random.Next(2, maxRangeForRandom);
+                    vector[j] = (ushort)random.Next(2, maxRangeForRandom);
                 }
                 shares.Add(vector);
             }
@@ -158,8 +245,8 @@ namespace SecretSharing
                 ratingVectors.Add(ratingVector);
             }
 
-            List<uint[]>[] ratingVectorsSharesArray = new List<uint[]>[100];
-            List<uint[]>[] XiRatingVectorsSharesArray = new List<uint[]>[100];
+            List<ushort[]>[] ratingVectorsSharesArray = new List<ushort[]>[100];
+            List<ushort[]>[] XiRatingVectorsSharesArray = new List<ushort[]>[100];
 
             for (int i = 0; i < 100; i++)
             {
@@ -283,7 +370,7 @@ namespace SecretSharing
             File.AppendAllLines(fileName, new string[1] { $"Total time for a single vendor computing the similarity matrix: {vendorTime.ToCustomTimeSpanFormat()}" });
         }
 
-        public static void SimulateSingleMediatorWorkInComputingSimilarityMatrix(uint[,] someRShare, uint[,] someXiRShare, uint[,] someSqRShare, int numOfShares, string fileName)
+        public static void SimulateSingleMediatorWorkInComputingSimilarityMatrix(ushort[,] someRShare, ushort[,] someXiRShare, ushort[,] someSqRShare, int numOfShares, string fileName)
         {
             int N = someRShare.GetLength(0);
             int M = someRShare.GetLength(1);
@@ -307,13 +394,13 @@ namespace SecretSharing
             SqRShare = null;
             XiRShare = null;
 
-            List<uint[]> cmShare = CreateRandomShares(N, numOfShares);
-            List<uint[]> XiCmShare = CreateRandomShares(N, numOfShares);
-            List<uint[]> SqCmShare = CreateRandomShares(N, numOfShares);
+            List<ushort[]> cmShare = CreateRandomShares(N, numOfShares);
+            List<ushort[]> XiCmShare = CreateRandomShares(N, numOfShares);
+            List<ushort[]> SqCmShare = CreateRandomShares(N, numOfShares);
 
-            List<uint[]> clShare = CreateRandomShares(N, numOfShares);
-            List<uint[]> XiClShare = CreateRandomShares(N, numOfShares);
-            List<uint[]> SqClShare = CreateRandomShares(N, numOfShares);
+            List<ushort[]> clShare = CreateRandomShares(N, numOfShares);
+            List<ushort[]> XiClShare = CreateRandomShares(N, numOfShares);
+            List<ushort[]> SqClShare = CreateRandomShares(N, numOfShares);
 
             var lines12To21Watch = Stopwatch.StartNew();
 
@@ -359,7 +446,7 @@ namespace SecretSharing
                 smVectors.Add(smVector);
             }
 
-            List<uint[]>[] sharesArray = new List<uint[]>[100];
+            List<ushort[]>[] sharesArray = new List<ushort[]>[100];
 
             for (int i = 0; i < 100; i++)
             {
@@ -806,7 +893,7 @@ namespace SecretSharing
             var shares = new List<uint[,]>();
             int N = matrix.GetLength(0);
             int M = matrix.GetLength(1);
-            int maxRangeForRandom = 65536;
+            int maxRangeForRandom = 65535;
 
             for (int i = 0; i < numOfShares; i++)
             {
@@ -1024,7 +1111,7 @@ namespace SecretSharing
         {
             int N = matrix.GetLength(0);
             int M = matrix.GetLength(1);
-            int maxRangeForRandom = 65536;
+            int maxRangeForRandom = 65535;
 
             if (numOfShares == 3)
             {
@@ -1233,7 +1320,7 @@ namespace SecretSharing
         /// <returns>Shares array for each of the mediators</returns>
         public static List<uint[]> ShamirSecretSharing(sbyte[] vector, int numOfShares)
         {
-            int maxRangeForRandom = 65536;
+            int maxRangeForRandom = 65535;
             var shares = new List<uint[]>();
             for (int i = 0; i < numOfShares; i++)
             {
@@ -1431,7 +1518,7 @@ namespace SecretSharing
 
         public static List<uint[]> ShamirSecretSharing(uint[] vector, int numOfShares)
         {
-            int maxRangeForRandom = 65536;
+            int maxRangeForRandom = 65535;
             var shares = new List<uint[]>();
             for (int i = 0; i < numOfShares; i++)
             {
@@ -1629,7 +1716,7 @@ namespace SecretSharing
 
         public static List<uint[]> ShamirSecretSharing(int[] vector, int numOfShares)
         {
-            int maxRangeForRandom = 65536;
+            int maxRangeForRandom = 65535;
             var shares = new List<uint[]>();
             for (int i = 0; i < numOfShares; i++)
             {
@@ -1827,7 +1914,7 @@ namespace SecretSharing
 
         public static void ShamirSecretSharingNoStoring(uint[] vector, int numOfShares)
         {
-            int maxRangeForRandom = 65536;
+            int maxRangeForRandom = 65535;
 
             if (numOfShares == 3)
             {
@@ -2016,6 +2103,25 @@ namespace SecretSharing
         /// <returns></returns>
 
         public static ulong ScalarProductShares(List<uint[]> clShares, List<uint[]> cmShares)
+        {
+            ulong[] coordinates = new ulong[clShares.Count];
+
+            for (int indexCount = 0; indexCount < clShares.Count; indexCount++)
+            {
+                for (int shareCount = 0; shareCount < clShares[0].Length; shareCount++)
+                {
+                    var newY = clShares[indexCount][shareCount] * (ulong)cmShares[indexCount][shareCount];
+
+                    coordinates[indexCount] += newY;
+                }
+            }
+
+            var secret = ReconstructShamirSecret(coordinates.ToList());
+
+            return secret;
+        }
+
+        public static ulong ScalarProductShares(List<ushort[]> clShares, List<ushort[]> cmShares)
         {
             ulong[] coordinates = new ulong[clShares.Count];
 

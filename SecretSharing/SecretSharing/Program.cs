@@ -11,7 +11,7 @@ namespace SecretSharing
     {
         static void Main()
         {
-            string[] datasets = new string[3] { "100K", "1M", "10M" }; //test, "10M"
+            string[] datasets = new string[4] { "100K", "1M", "10M", "20M" }; //test,
             // k - vendors
             // D - mediators
             int q = 80; // num of similar items
