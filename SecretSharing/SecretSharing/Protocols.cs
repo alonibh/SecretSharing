@@ -355,82 +355,97 @@ namespace SecretSharing
 
         public static void SimulateSingleVendorWorkInComputingSimilarityMatrix(sbyte[,] Rk, int numOfShares, string fileName)
         {
-            var vendorWatch = Stopwatch.StartNew();
+            var AWatch = Stopwatch.StartNew();
 
             sbyte[,] sq = Rk.CalcSq();
             sbyte[,] xi = Rk.CalcXi();
 
-            ShamirSecretSharingMatrixNoStoring(Rk, numOfShares);
-            ShamirSecretSharingMatrixNoStoring(sq, numOfShares);
-            ShamirSecretSharingMatrixNoStoring(xi, numOfShares);
+            AWatch.Stop();
+            var ATime = new TimeSpan(0, 0, 0, 0, (int)AWatch.ElapsedMilliseconds);
 
-            vendorWatch.Stop();
-            var vendorTime = new TimeSpan(0, 0, 0, 0, (int)vendorWatch.ElapsedMilliseconds);
+            File.AppendAllLines(fileName, new string[1] { $"A time is: {ATime.ToCustomTimeSpanFormat()}" });
 
-            File.AppendAllLines(fileName, new string[1] { $"Total time for a single vendor computing the similarity matrix: {vendorTime.ToCustomTimeSpanFormat()}" });
+            var FDWatch = new Stopwatch();
+            for (int i = 0; i < 10000000; i++)
+            {
+                uint scalar = (uint)random.Next(0, 2147483647);
+                FDWatch.Start();
+                ShamirSecretSharingNoStoring(scalar, numOfShares);
+                FDWatch.Stop();
+            }
+
+            var FDTime = new TimeSpan(0, 0, 0, 0, (int)FDWatch.ElapsedMilliseconds);
+            FDTime = FDTime * 3 * Rk.GetLength(0) * Rk.GetLength(1) / 10000000;
+            File.AppendAllLines(fileName, new string[1] { $"F({numOfShares})*3*N*M: {FDTime.ToCustomTimeSpanFormat()}" });
+
+            var totalVendorTime = ATime + FDTime;
+
+            File.AppendAllLines(fileName, new string[1] { $"Total time for a single vendor computing the similarity matrix: {totalVendorTime.ToCustomTimeSpanFormat()}" });
         }
 
-        public static void SimulateSingleMediatorWorkInComputingSimilarityMatrix(ushort[,] someRShare, ushort[,] someXiRShare, ushort[,] someSqRShare, int numOfShares, string fileName)
+        public static void SimulateSingleMediatorWorkInComputingSimilarityMatrix(int N, int M, ushort[,] someRShare, ushort[,] someXiRShare, ushort[,] someSqRShare, int numOfShares, string fileName)
         {
-            int N = someRShare.GetLength(0);
-            int M = someRShare.GetLength(1);
+            if (someRShare != null)
+            {
+                var lines7To9Watch = Stopwatch.StartNew();
 
-            var lines7To9Watch = Stopwatch.StartNew();
+                uint[,] RShare = new uint[N, M];
+                uint[,] SqRShare = new uint[N, M];
+                uint[,] XiRShare = new uint[N, M];
 
-            uint[,] RShare = new uint[N, M];
-            uint[,] SqRShare = new uint[N, M];
-            uint[,] XiRShare = new uint[N, M];
+                RShare.AddShare(someRShare);
+                SqRShare.AddShare(someXiRShare);
+                XiRShare.AddShare(someSqRShare);
 
-            RShare.AddShare(someRShare);
-            SqRShare.AddShare(someXiRShare);
-            XiRShare.AddShare(someSqRShare);
+                lines7To9Watch.Stop();
+                var lines7To9Time = new TimeSpan(0, 0, 0, 0, (int)lines7To9Watch.ElapsedMilliseconds);
 
-            lines7To9Watch.Stop();
-            var lines7To9Time = new TimeSpan(0, 0, 0, 0, (int)lines7To9Watch.ElapsedMilliseconds);
+                File.AppendAllLines(fileName, new string[1] { $"M1: {lines7To9Time.ToCustomTimeSpanFormat()}" });
 
-            File.AppendAllLines(fileName, new string[1] { $"Lines 7 to 9 took for each mediator: {lines7To9Time.ToCustomTimeSpanFormat()}" });
+                RShare = null;
+                SqRShare = null;
+                XiRShare = null;
+            }
 
-            RShare = null;
-            SqRShare = null;
-            XiRShare = null;
+            var someCmShare = CreateRandomShares(N, numOfShares)[0];
 
-            List<ushort[]> cmShare = CreateRandomShares(N, numOfShares);
-            List<ushort[]> XiCmShare = CreateRandomShares(N, numOfShares);
-            List<ushort[]> SqCmShare = CreateRandomShares(N, numOfShares);
+            var someClShare = CreateRandomShares(N, numOfShares)[0];
 
-            List<ushort[]> clShare = CreateRandomShares(N, numOfShares);
-            List<ushort[]> XiClShare = CreateRandomShares(N, numOfShares);
-            List<ushort[]> SqClShare = CreateRandomShares(N, numOfShares);
-
-            var lines12To21Watch = Stopwatch.StartNew();
+            var M2Watch = Stopwatch.StartNew();
 
             for (int i = 0; i < 100; i++)
             {
                 Parallel.For(0, 100, (j) =>
                 {
-                    double similarityScore = 0;
-
-                    ulong z1 = ScalarProductShares(clShare, cmShare);
-
-                    ulong z2 = ScalarProductShares(SqClShare, XiCmShare);
-
-                    ulong z3 = ScalarProductShares(XiClShare, SqCmShare);
-
-                    var mult = z2 * z3;
-                    if (mult != 0)
-                    {
-                        similarityScore = z1 / (Math.Sqrt(mult));
-                        var res = Math.Floor((similarityScore * Q) + 0.5);
-                    }
+                    ulong z1 = ScalarProductVectors(someCmShare, someClShare);
                 });
             }
 
-            lines12To21Watch.Stop();
-            var lines12To21Time = new TimeSpan(0, 0, 0, 0, (int)lines12To21Watch.ElapsedMilliseconds);
-            lines12To21Time = lines12To21Time * M * (M - 1) / 20000;
-            File.AppendAllLines(fileName, new string[1] { $"Lines 12 to 21 took for each mediator: {lines12To21Time.ToCustomTimeSpanFormat()}" });
+            M2Watch.Stop();
+            var K2Time = new TimeSpan(0, 0, 0, 0, (int)M2Watch.ElapsedMilliseconds);
+            K2Time = (K2Time * M * (M - 1) * 3) / (10000 * 2);
+            File.AppendAllLines(fileName, new string[1] { $"K2: {K2Time.ToCustomTimeSpanFormat()}" });
 
-            File.AppendAllLines(fileName, new string[1] { $"Total time for each mediator computing the similarity matrix: {(lines12To21Time + lines7To9Time).ToCustomTimeSpanFormat()}" });
+            List<ulong> coordinates = new List<ulong>();
+            for (int i = 0; i < numOfShares; i++)
+            {
+                coordinates.Add((ulong)random.Next(0, 2147483647));
+            }
+
+            var GDWatch = Stopwatch.StartNew();
+
+            for (int i = 0; i < 100; i++)
+            {
+                Parallel.For(0, 100, (j) =>
+                {
+                    ulong z1 = ReconstructShamirSecret(coordinates);
+                });
+            }
+
+            GDWatch.Stop();
+            var K3Time = new TimeSpan(0, 0, 0, 0, (int)GDWatch.ElapsedMilliseconds);
+            K3Time = (K3Time * M * (M - 1)) / (2 * 10000 * numOfShares);
+            File.AppendAllLines(fileName, new string[1] { $"K3: {K3Time.ToCustomTimeSpanFormat()}" });
         }
 
         public static void SimulateSingleMediatorWorkInOnlinePredictRating(int numberOfItems, int numOfShares, string fileName)
@@ -1912,6 +1927,169 @@ namespace SecretSharing
             return shares;
         }
 
+        public static void ShamirSecretSharingNoStoring(uint scalar, int numOfShares)
+        {
+            int maxRangeForRandom = 65535;
+
+            if (numOfShares == 3)
+            {
+                uint a = (uint)random.Next(2, maxRangeForRandom);
+                uint lastY = scalar;
+
+                for (int i = 0; i < 3; i++)
+                {
+                    var y = lastY + a;
+                    lastY = y;
+                }
+            }
+
+            else if (numOfShares == 5)
+            {
+                uint a = (uint)random.Next(2, maxRangeForRandom);
+                uint b = (uint)random.Next(2, maxRangeForRandom);
+
+                uint B = a + b;
+                uint B2 = b + b;
+                uint B3 = B + B2;
+                uint B5 = B3 + B2;
+                uint B7 = B5 + B2;
+                uint B9 = B7 + B2;
+                uint lastY = 0;
+
+                for (int i = 0; i < 5; i++)
+                {
+                    uint y = 0;
+                    switch (i)
+                    {
+                        case 0:
+                            y = scalar + B;
+                            break;
+                        case 1:
+                            y = lastY + B3;
+                            break;
+                        case 2:
+                            y = lastY + B5;
+                            break;
+                        case 3:
+                            y = lastY + B7;
+                            break;
+                        case 4:
+                            y = lastY + B9;
+                            break;
+                    }
+                    lastY = y;
+                }
+            }
+
+            else if (numOfShares == 7)
+            {
+                uint a = (uint)random.Next(2, maxRangeForRandom);
+                uint b = (uint)random.Next(2, maxRangeForRandom);
+                uint c = (uint)random.Next(2, maxRangeForRandom);
+
+                uint B = a + b + c;
+                uint B1 = 6 * c;
+                uint B2 = 2 * b;
+                uint B3 = B + B2 + B1;
+                uint B5 = B3 + B2 + 2 * B1;
+                uint B7 = B5 + B2 + 3 * B1;
+                uint B9 = B7 + B2 + 4 * B1;
+                uint B11 = B9 + B2 + 5 * B1;
+                uint B13 = B11 + B2 + 6 * B1;
+
+                uint lastY = 0;
+
+                for (int i = 0; i < 7; i++)
+                {
+                    uint y = 0;
+                    switch (i)
+                    {
+                        case 0:
+                            y = scalar + B;
+                            break;
+                        case 1:
+                            y = lastY + B3;
+                            break;
+                        case 2:
+                            y = lastY + B5;
+                            break;
+                        case 3:
+                            y = lastY + B7;
+                            break;
+                        case 4:
+                            y = lastY + B9;
+                            break;
+                        case 5:
+                            y = lastY + B11;
+                            break;
+                        case 6:
+                            y = lastY + B13;
+                            break;
+                    }
+                    lastY = y;
+                }
+            }
+
+            else if (numOfShares == 9)
+            {
+                uint a = (uint)random.Next(2, maxRangeForRandom);
+                uint b = (uint)random.Next(2, maxRangeForRandom);
+                uint c = (uint)random.Next(2, maxRangeForRandom);
+                uint d = (uint)random.Next(2, maxRangeForRandom);
+
+                uint B = a + b + c + d;
+                uint B1 = 2 * d;
+                uint B2 = 6 * c;
+                uint B3 = 2 * b;
+                uint B5 = B + B3 + B2 + 7 * B1;
+                uint B7 = B5 + B3 + 2 * B2 + 25 * B1;
+                uint B9 = B7 + B3 + 3 * B2 + 55 * B1;
+                uint B11 = B9 + B3 + 4 * B2 + 97 * B1;
+                uint B13 = B11 + B3 + 5 * B2 + 151 * B1;
+                uint B15 = B13 + B3 + 6 * B2 + 217 * B1;
+                uint B17 = B15 + B3 + 7 * B2 + 295 * B1;
+                uint B19 = B17 + B3 + 8 * B2 + 385 * B1;
+
+                uint lastY = 0;
+
+                for (int i = 0; i < 9; i++)
+                {
+                    uint y = 0;
+                    switch (i)
+                    {
+                        case 0:
+                            y = scalar + B;
+                            break;
+                        case 1:
+                            y = lastY + B5;
+                            break;
+                        case 2:
+                            y = lastY + B7;
+                            break;
+                        case 3:
+                            y = lastY + B9;
+                            break;
+                        case 4:
+                            y = lastY + B11;
+                            break;
+                        case 5:
+                            y = lastY + B13;
+                            break;
+                        case 6:
+                            y = lastY + B15;
+                            break;
+                        case 7:
+                            y = lastY + B17;
+                            break;
+                        case 8:
+                            y = lastY + B19;
+                            break;
+                    }
+                    lastY = y;
+                }
+            }
+        }
+
         public static void ShamirSecretSharingNoStoring(uint[] vector, int numOfShares)
         {
             int maxRangeForRandom = 65535;
@@ -2391,6 +2569,18 @@ namespace SecretSharing
         }
 
         public static ulong ScalarProductVectors(int[] vector1, int[] vector2)
+        {
+            int length = vector1.Length;
+            ulong sum = 0;
+            for (int i = 0; i < length; i++)
+            {
+                sum += (ulong)(vector1[i] * vector2[i]);
+            }
+
+            return sum % PRIME;
+        }
+
+        public static ulong ScalarProductVectors(ushort[] vector1, ushort[] vector2)
         {
             int length = vector1.Length;
             ulong sum = 0;

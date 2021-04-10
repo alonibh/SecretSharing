@@ -1,5 +1,7 @@
-﻿using System;
+﻿using LumenWorks.Framework.IO.Csv;
+using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -58,11 +60,17 @@ namespace SecretSharing
 
             Protocols.SimulateSingleVendorWorkInComputingSimilarityMatrix(userItemMatrix, D, fileName);
 
-            var someRShare = Protocols.CreateRandomMatrixShare(N / D, M);
-            var someXiRShare = Protocols.CreateRandomMatrixShare(N / D, M);
-            var someSqRShare = Protocols.CreateRandomMatrixShare(N / D, M);
+            ushort[,] someRShare = null;
+            ushort[,] someXiRShare = null;
+            ushort[,] someSqRShare = null;
+            if (dataset != "20M")
+            {
+                someRShare = Protocols.CreateRandomMatrixShare(N, M);
+                someXiRShare = Protocols.CreateRandomMatrixShare(N, M);
+                someSqRShare = Protocols.CreateRandomMatrixShare(N, M);
+            }
 
-            Protocols.SimulateSingleMediatorWorkInComputingSimilarityMatrix(someRShare, someXiRShare, someSqRShare, D, fileName);
+            Protocols.SimulateSingleMediatorWorkInComputingSimilarityMatrix(N, M, someRShare, someXiRShare, someSqRShare, D, fileName);
 
             someRShare = null;
             someXiRShare = null;
