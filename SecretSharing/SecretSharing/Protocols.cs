@@ -234,28 +234,15 @@ namespace SecretSharing
             int N = userItemMatrix.GetLength(0);
             int M = userItemMatrix.GetLength(1);
 
-            List<uint[]> ratingVectors = new List<uint[]>();
-            for (int i = 0; i < 100; i++)
-            {
-                var ratingVector = new uint[N];
-                for (int j = 0; j < N; j++)
-                {
-                    ratingVector[j] = (uint)random.Next(0, 6);
-                }
-                ratingVectors.Add(ratingVector);
-            }
-
             List<ushort[]>[] ratingVectorsSharesArray = new List<ushort[]>[100];
             List<ushort[]>[] XiRatingVectorsSharesArray = new List<ushort[]>[100];
 
             for (int i = 0; i < 100; i++)
             {
-                var ratingVector = ratingVectors[i];
-
-                var ratingVectorShares = CreateRandomShares(ratingVector.Length, numOfShares);
+                var ratingVectorShares = CreateRandomShares(N, numOfShares);
                 ratingVectorsSharesArray[i] = ratingVectorShares;
 
-                var XiRatingVectorShares = CreateRandomShares(ratingVector.Length, numOfShares);
+                var XiRatingVectorShares = CreateRandomShares(N, numOfShares);
                 XiRatingVectorsSharesArray[i] = XiRatingVectorShares;
             }
 
