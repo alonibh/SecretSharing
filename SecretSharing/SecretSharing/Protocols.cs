@@ -381,8 +381,8 @@ namespace SecretSharing
                 uint[,] XiRShare = new uint[N, M];
 
                 RShare.AddShare(someRShare);
-                SqRShare.AddShare(someXiRShare);
-                XiRShare.AddShare(someSqRShare);
+                SqRShare.AddShare(someSqRShare);
+                XiRShare.AddShare(someXiRShare);
 
                 lines7To9Watch.Stop();
                 var lines7To9Time = new TimeSpan(0, 0, 0, 0, (int)lines7To9Watch.ElapsedMilliseconds);

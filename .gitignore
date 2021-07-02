@@ -30,3 +30,30 @@ msbuild.wrn
 
 # Visual Studio 2015
 .vs/
+SecretSharing/packages/BigInteger.1.0.7/.signature.p7s
+SecretSharing/packages/BigInteger.1.0.7/BigInteger.1.0.7.nupkg
+SecretSharing/packages/BigInteger.1.0.7/lib/net20/BigInteger.dll
+SecretSharing/packages/Extreme.Numerics.7.0.19/.signature.p7s
+SecretSharing/packages/Extreme.Numerics.7.0.19/Extreme.Numerics.7.0.19.nupkg
+SecretSharing/packages/Extreme.Numerics.7.0.19/readme.txt
+SecretSharing/packages/Extreme.Numerics.7.0.19/lib/net35/Extreme.Numerics.dll
+SecretSharing/packages/Extreme.Numerics.7.0.19/lib/net35/Extreme.Numerics.xml
+SecretSharing/packages/Extreme.Numerics.7.0.19/lib/net40/Extreme.Numerics.dll
+SecretSharing/packages/Extreme.Numerics.7.0.19/lib/net40/Extreme.Numerics.xml
+SecretSharing/packages/Extreme.Numerics.7.0.19/lib/net46/Extreme.Numerics.dll
+SecretSharing/packages/Extreme.Numerics.7.0.19/lib/net46/Extreme.Numerics.xml
+SecretSharing/packages/Extreme.Numerics.7.0.19/lib/netcoreapp1.1/Extreme.Numerics.dll
+SecretSharing/packages/Extreme.Numerics.7.0.19/lib/netcoreapp1.1/Extreme.Numerics.xml
+SecretSharing/packages/Extreme.Numerics.7.0.19/lib/netcoreapp2.1/Extreme.Numerics.dll
+SecretSharing/packages/Extreme.Numerics.7.0.19/lib/netcoreapp2.1/Extreme.Numerics.xml
+SecretSharing/packages/Extreme.Numerics.7.0.19/lib/netstandard1.3/Extreme.Numerics.dll
+SecretSharing/packages/Extreme.Numerics.7.0.19/lib/netstandard1.3/Extreme.Numerics.xml
+SecretSharing/packages/Extreme.Numerics.7.0.19/lib/netstandard2.0/Extreme.Numerics.dll
+SecretSharing/packages/Extreme.Numerics.7.0.19/lib/netstandard2.0/Extreme.Numerics.xml
+SecretSharing/packages/Extreme.Numerics.7.0.19/tools/Extreme.LicenseManager.exe
+SecretSharing/packages/PaillierExt.0.9.4.32590/.signature.p7s
+SecretSharing/packages/PaillierExt.0.9.4.32590/PaillierExt.0.9.4.32590.nupkg
+SecretSharing/packages/PaillierExt.0.9.4.32590/lib/net40/PaillierExt.dll
+SecretSharing/packages/PaillierExt.Homomorphism.0.9.3.32453/.signature.p7s
+SecretSharing/packages/PaillierExt.Homomorphism.0.9.3.32453/PaillierExt.Homomorphism.0.9.3.32453.nupkg
+SecretSharing/packages/PaillierExt.Homomorphism.0.9.3.32453/lib/net40/PaillierExt.Homomorphism.dll
