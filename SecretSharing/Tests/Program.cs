@@ -22,13 +22,13 @@ namespace Tests
             double exp1024 = 1.04455;
 
             int[] ms = new int[4] { 1682, 3706, 10677, 26744 };
-            int[] ns = new int[4] { 943, 6040, 71567, 138493};
+            int[] ns = new int[4] { 943, 6040, 71567, 138493 };
             int Q = 80;
 
             for (int i = 0; i < 4; i++)
             {
                 Console.WriteLine("---------------------");
-                Console.WriteLine(2*ms[i]  * ns[i]*enc1024 / 1000);
+                Console.WriteLine(2 * ms[i] * ns[i] * enc1024 / 1000);
                 Console.WriteLine("---------------------");
             }
 

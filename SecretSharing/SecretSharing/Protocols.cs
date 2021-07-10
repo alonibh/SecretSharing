@@ -431,7 +431,7 @@ namespace SecretSharing
 
             GDWatch.Stop();
             var K3Time = new TimeSpan(0, 0, 0, 0, (int)GDWatch.ElapsedMilliseconds);
-            K3Time = (K3Time * M * (M - 1)) / (2 * 10000 * numOfShares);
+            K3Time = (K3Time * 3 * M * (M - 1)) / (2 * 10000 * numOfShares);
             File.AppendAllLines(fileName, new string[1] { $"K3: {K3Time.ToCustomTimeSpanFormat()}" });
         }
 

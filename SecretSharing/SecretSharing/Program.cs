@@ -16,7 +16,7 @@ namespace SecretSharing
             // k - vendors
             // D - mediators
             int q = 80; // num of similar items
-            int h = 20; // num of most recomended items to take
+            int h = 10; // num of most recomended items to take
 
             foreach (var dataset in datasets)
             {
@@ -619,6 +619,65 @@ namespace SecretSharing
 
             }
             #endregion
+        }
+
+        static void GenerateDatasets()
+        {
+            List<Tuple<string, int, int>> datasets = new List<Tuple<string, int, int>>
+            {
+                new Tuple<string, int, int>("WN0",100000,10000 ),
+                new Tuple<string, int, int>("WN1",250000,10000 ),
+                new Tuple<string, int, int>("WN2",500000,10000 ),
+                new Tuple<string, int, int>("WN3",1000000,10000 ),
+                new Tuple<string, int, int>("WN4",2000000,10000 ),
+
+                new Tuple<string, int, int>("WM0",100000,10000 ),
+                new Tuple<string, int, int>("WM1",100000,25000 ),
+                new Tuple<string, int, int>("WM2",100000,50000 ),
+                new Tuple<string, int, int>("WM3",100000,100000 ),
+                new Tuple<string, int, int>("WM4",100000,200000 )
+
+            };
+            foreach (var dataset in datasets)
+            {
+                int N = dataset.Item2;
+                int M = dataset.Item3;
+                string fileName = dataset.Item1;
+
+                int A = 0;
+                Random rand = new Random();
+
+                List<string> lines = new List<string>();
+                int counter = 0;
+                int selectedRandomNumber = rand.Next(0, 50);
+
+                for (int i = 0; i < N; i++)
+                {
+                    for (int j = 0; j < M; j++)
+                    {
+                        if (selectedRandomNumber == counter % 50)
+                        {
+                            lines.Add($"{i} {j} {rand.Next(1, 6)}");
+                            A++;
+                        }
+                        if (counter == 50)
+                        {
+                            selectedRandomNumber = rand.Next(0, 50);
+                            counter = 0;
+                        }
+                        counter++;
+                    }
+                    if (i % 1000 == 0)
+                    {
+                        File.AppendAllLines($"{fileName}.dat", lines);
+                        lines.Clear();
+                        Console.WriteLine(i);
+                    }
+                }
+                lines.Add($"{N - 1} {M - 1} {rand.Next(1, 6)}");
+                File.AppendAllLines($"{fileName}.dat", lines);
+                Console.WriteLine(A);
+            }
         }
     }
 }
